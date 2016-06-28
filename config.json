@@ -1,0 +1,38 @@
+{
+  "bin_dir": "./bin",
+  "tmp_dir": ".",
+  "fastq_dir": "./data",
+  "nb_threads": 10,
+  "max_memory": 8000,
+  "max_disk": 10000,
+  "kmer_length": 31,
+
+  "dekupl_counter": {
+    "min_recurrence": 3,
+    "min_recurrence_abundance": 10
+  },
+
+  "Ttest": {
+    "condition" : {
+      "A": "A",
+      "B": "B"
+    },
+    "pvalue_threshold": 0.01,
+    "log2fc_threshold": 2
+  },
+
+  "samples": [{
+      "name": "sample1",
+      "condition": "A"
+    }, {
+      "name" : "sample2",
+      "condition" : "A" 
+    }, {
+      "name" : "sample3",
+      "condition" : "B" 
+    }, {
+      "name" : "sample4",
+      "condition" : "B" 
+    }
+  ]
+}

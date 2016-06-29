@@ -1,5 +1,4 @@
 {
-  "bin_dir": "./bin",
   "tmp_dir": ".",
   "fastq_dir": "./data",
   "nb_threads": 10,

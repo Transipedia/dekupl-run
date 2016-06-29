@@ -7,42 +7,52 @@ __author__ = "Jérôme Audoux (jerome.audoux@inserm.fr)"
 configfile: "config.json"
 
 # COMMON VARIABLES
-TMP_FOLDER      = config['tmp_dir']+"/dekupl_tmp"
-FASTQ_DIR       = config['fastq_dir']
-KALLISTO_DIR    = "kallisto"
 SAMPLE_NAMES    = [i['name'] for i in config["samples"]]
 CONDITION_COL   = "condition"
 CONDITION_A     = config['Ttest']['condition']['A']
 CONDITION_B     = config['Ttest']['condition']['B']
 
+# DIRECTORIES
+BIN_DIR         = "bin"
+TMP_DIR         = config['tmp_dir']+"/dekupl_tmp"
+FASTQ_DIR       = config['fastq_dir']
+GENE_EXP_DIR    = "gene_expression"
+KALLISTO_DIR    = GENE_EXP_DIR + "/kallisto"
+COUNTS_DIR      = "kmer_counts"
+KMER_DE_DIR     = CONDITION_A + "_vs_" + CONDITION_B + "_kmer_counts"
+METADATA_DIR    = "metadata"
+REFERENCE_DIR   = "references"
+
 # FILES
-RAW_COUNTS                  = "raw-counts.tsv.gz"
-NO_GENCODE_COUNTS           = "noGENCODE-counts.tsv.gz"
-DIFF_COUNTS                 = CONDITION_A + "vs" + CONDITION_B + "-counts.tsv.gz"
-MERGED_DIFF_COUNTS          = "merged-" + DIFF_COUNTS
-SAMPLE_CONDITIONS           = "sample_conditions.tsv"
-SAMPLE_CONDITIONS_FULL      = "sample_conditions_full.tsv"
-GENCODE_FASTA               = "annotations/gencode.v24.transcripts.fa.gz"
-GENCODE_COUNTS              = "annotations/gencode.v24.transcripts.tsv.gz"
-TRANSCRIPT_TO_GENE_MAPPING  = "annotations/transcript_to_gene_mapping.tsv"
-KALLISTO_INDEX              = "annotations/gencode.v24.transcripts-kallisto.idx"
-TRANSCRIPT_COUNTS           = KALLISTO_DIR + "/transcript_counts.tsv.gz"
-GENE_COUNTS                 = KALLISTO_DIR + "/gene_counts.tsv.gz"
-DEGS                        = CONDITION_A + "vs" + CONDITION_B + "-DEGs.tsv"
-NORMALIZATION_FACTORS       = "normalization_factors.tsv"
+RAW_COUNTS                  = COUNTS_DIR    + "/raw-counts.tsv.gz"
+NO_GENCODE_COUNTS           = COUNTS_DIR    + "/noGENCODE-counts.tsv.gz"
+DIFF_COUNTS                 = KMER_DE_DIR   + "/diff-counts.tsv.gz"
+MERGED_DIFF_COUNTS          = KMER_DE_DIR   + "/merged-diff-counts.tsv.gz"
+SAMPLE_CONDITIONS           = METADATA_DIR  + "/sample_conditions.tsv"
+SAMPLE_CONDITIONS_FULL      = METADATA_DIR  + "/sample_conditions_full.tsv"
+GENCODE_FASTA               = REFERENCE_DIR + "/gencode.v24.transcripts.fa.gz"
+GENCODE_COUNTS              = REFERENCE_DIR + "/gencode.v24.transcripts.tsv.gz"
+TRANSCRIPT_TO_GENE_MAPPING  = REFERENCE_DIR + "/transcript_to_gene_mapping.tsv"
+KALLISTO_INDEX              = REFERENCE_DIR + "/gencode.v24.transcripts-kallisto.idx"
+TRANSCRIPT_COUNTS           = KALLISTO_DIR  + "/transcript_counts.tsv.gz"
+GENE_COUNTS                 = KALLISTO_DIR  + "/gene_counts.tsv.gz"
+DEGS                        = GENE_EXP_DIR  + "/" + CONDITION_A + "vs" + CONDITION_B + "-DEGs.tsv"
+NORMALIZATION_FACTORS       = GENE_EXP_DIR  + "/normalization_factors.tsv"
 
 # Debug
-#config['dekupl_counter']['min_recurrence'] = 2
-#config['dekupl_counter']['min_recurrence_abundance'] = 1
+config['dekupl_counter']['min_recurrence'] = 2
+config['dekupl_counter']['min_recurrence_abundance'] = 1
+config['Ttest']['pvalue_threshold'] = 0.5
+config['Ttest']['log2fc_threshold'] = 1
 
 # binaries
-REVCOMP         = config['bin_dir'] + "/revCompFastq.pl"
-DEKUPL_COUNTER  = config['bin_dir'] + "/dekupl-counter"
-DIFF_FILTER     = config['bin_dir'] + "/diffFilter.pl"
-TTEST_FILTER    = config['bin_dir'] + "/TtestFilter.R"
-KALLISTO        = config['bin_dir'] + "/kallisto"
-MERGE_COUNTS    = config['bin_dir'] + "/mergeCounts.pl"
-MERGE_TAGS      = config['bin_dir'] + "/mergeTags.pl"
+REVCOMP         = BIN_DIR + "/revCompFastq.pl"
+DEKUPL_COUNTER  = BIN_DIR + "/dekupl-counter"
+DIFF_FILTER     = BIN_DIR + "/diffFilter.pl"
+TTEST_FILTER    = BIN_DIR + "/TtestFilter.R"
+KALLISTO        = BIN_DIR + "/kallisto"
+MERGE_COUNTS    = BIN_DIR + "/mergeCounts.pl"
+MERGE_TAGS      = BIN_DIR + "/mergeTags.pl"
 
 rule all:
   input: MERGED_DIFF_COUNTS
@@ -84,6 +94,7 @@ rule download_kallisto:
     shell("wget https://github.com/pachterlab/kallisto/releases/download/v0.43.0/kallisto_linux-v0.43.0.tar.gz -O {output.kallisto_tarball}")
     shell("tar -xzf {output.kallisto_tarball} -C share")
     shell("ln -s ../share/kallisto_linux-v0.43.0/kallisto bin/kallisto")
+    shell("rm {output.kallisto_tarball}") 
 
 # 1.2 Create a Kallisto index of the reference transrciptome
 rule kallisto_index:
@@ -228,18 +239,18 @@ rule build_dekupl_counter:
 # 2.2 Reverse complement left mate for stranded dekupl counts
 rule revcomp_pairs:
   input:  FASTQ_DIR + "/{sample}_1.fastq.gz"
-  output: temp(TMP_FOLDER+"/{sample}_1.fastq.gz")
+  output: temp(TMP_DIR+"/{sample}_1.fastq.gz")
   shell:  "{REVCOMP} <(zcat {input}) | gzip -c > {output}"
 
 # 2.3 Counts the k-mers on all the samples together
 rule dekupl_counter:
   input: 
-    fastq_files = expand("{tmp_folder}/{sample}_1.fastq.gz {fastq_dir}/{sample}_2.fastq.gz".split(), sample = SAMPLE_NAMES, fastq_dir = FASTQ_DIR, tmp_folder = TMP_FOLDER),
+    fastq_files = expand("{tmp_folder}/{sample}_1.fastq.gz {fastq_dir}/{sample}_2.fastq.gz".split(), sample = SAMPLE_NAMES, fastq_dir = FASTQ_DIR, tmp_folder = TMP_DIR),
     dekupl_binary = DEKUPL_COUNTER
   output: 
     counts = RAW_COUNTS, 
-    tmp_folder = temp(TMP_FOLDER),
-    tmp_output = temp(TMP_FOLDER + "/counts.h5")
+    tmp_folder = temp(TMP_DIR),
+    tmp_output = temp(TMP_DIR + "/counts.h5")
   threads: 10
   run:
     # Create a list of fastq files separated with comma
@@ -251,7 +262,7 @@ rule dekupl_counter:
           -kmer-size {config[kmer_length]} \
           -min-recurrence {config[dekupl_counter][min_recurrence]} \
           -min-recurrence-abundance {config[dekupl_counter][min_recurrence_abundance]} \
-          -paired-end -out-tmp {TMP_FOLDER} -nb-cores {threads} \
+          -paired-end -out-tmp {TMP_DIR} -nb-cores {threads} \
           -max-memory {config[max_memory]} -max-disk {config[max_disk]} \
           -out {output.tmp_output} \
           -in {fastq_list} | gzip -c >> {output.counts}""")
@@ -273,8 +284,8 @@ rule gencode_counts:
   input: GENCODE_FASTA
   output: 
     counts = GENCODE_COUNTS,
-    tmp_folder = temp(TMP_FOLDER),
-    tmp_output = temp(TMP_FOLDER + "/counts.h5")
+    tmp_folder = temp(TMP_DIR),
+    tmp_output = temp(TMP_DIR + "/counts.h5")
   threads: 10
   shell: """{DEKUPL_COUNTER} \
             -kmer-size {config[kmer_length]} \
@@ -282,7 +293,7 @@ rule gencode_counts:
             -min-recurrence-abundance 1 \
             -abundance-min 1 \
             -max-memory {config[max_memory]} -max-disk {config[max_disk]} \
-            -out-tmp {TMP_FOLDER} -nb-cores {threads} \
+            -out-tmp {TMP_DIR} -nb-cores {threads} \
             -out {output.tmp_output} \
             -in {input} | gzip -c > {output.counts}"""
 
@@ -306,7 +317,7 @@ rule test_diff_counts:
     counts = NO_GENCODE_COUNTS,
     sample_conditions = SAMPLE_CONDITIONS_FULL
   output: DIFF_COUNTS
-  shell: "{TTEST_FILTER} {input.counts} {input.sample_conditions} {CONDITION_COL} {CONDITION_A} {CONDITION_B} {config[Ttest][pvalue_threshold]} config[Ttest][log2fc_threshold] | gzip -c > {output}"
+  shell: "{TTEST_FILTER} {input.counts} {input.sample_conditions} {CONDITION_COL} {CONDITION_A} {CONDITION_B} {config[Ttest][pvalue_threshold]} {config[Ttest][log2fc_threshold]} | gzip -c > {output}"
 
 rule merge_tags:
   input:

@@ -1,11 +1,27 @@
-# Dependencies
+# DE-kupl
+
+DE-kupl is a pipline, that finds differentially expressed k-mers between RNA-Seq dataset.
+
+# INSTALL
+
+Before using Dekupl, install these dependencies.
 
 - Snakemake
 - CMake
-- R: DESEq2 :   
-- Python: rpy2 pip3 install rpy2 --user
-- Perl: CracTools::Utils : cpanm install CracTools::Utils
-- Kallisto (downloaded automatically)
+- R: 
+  * DESEq2 : open R and execute :
+    `> source("https://bioconductor.org/biocLite.R")`
+    `> biocLite("DESeq2")`
+- Python: 
+  * rpy2 : `pip3 install rpy2`
+- Perl: 
+  * CracTools::Utils : `cpanm install CracTools::Utils`
+
+# USAGE
+
+1. Clone this repository to your cluster
+2. Edit the config.json file to add the list of your samples, their conditions and the location their FASTQ files
+3. Run the pipeline with then `snakemake -jNB_THREADS -p` command 
 
 # FAQ
 

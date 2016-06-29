@@ -32,8 +32,8 @@ DEGS                        = CONDITION_A + "vs" + CONDITION_B + "-DEGs.tsv"
 NORMALIZATION_FACTORS       = "normalization_factors.tsv"
 
 # Debug
-config['dekupl_counter']['min_recurrence'] = 2
-config['dekupl_counter']['min_recurrence_abundance'] = 1
+#config['dekupl_counter']['min_recurrence'] = 2
+#config['dekupl_counter']['min_recurrence_abundance'] = 1
 
 # binaries
 REVCOMP         = config['bin_dir'] + "/revCompFastq.pl"

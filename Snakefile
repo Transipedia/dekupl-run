@@ -94,7 +94,6 @@ rule download_kallisto:
     shell("wget https://github.com/pachterlab/kallisto/releases/download/v0.43.0/kallisto_linux-v0.43.0.tar.gz -O {output.kallisto_tarball}")
     shell("tar -xzf {output.kallisto_tarball} -C share")
     shell("ln -s ../share/kallisto_linux-v0.43.0/kallisto bin/kallisto")
-    shell("rm {output.kallisto_tarball}") 
 
 # 1.2 Create a Kallisto index of the reference transrciptome
 rule kallisto_index:

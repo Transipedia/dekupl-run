@@ -62,7 +62,7 @@ while (length(line <- readLines(con, n = 1, warn = FALSE)) > 0) {
   #test <- wilcox.test(values[conditionA_indicies],values[conditionB_indicies])
   meanA = test$estimate[1]
   meanB = test$estimate[2]
-  log2FC = log2(meanA/meanB)
+  log2FC = log2(meanB/meanA)
   if(!is.nan(test$p.value) && test$p.value < pvalue_threshold && abs(log2FC) >= log2fc_threshold) {
     #write(test$p.value,stderr())
     #write(paste(values[conditionA_indicies],collapse=", "),stderr())

@@ -238,7 +238,7 @@ rule jellyfish_count:
     r2 = FASTQ_DIR  + "/{sample}_2.fastq.gz"
   output: COUNTS_DIR + "/{sample}.jf"
   threads: 10
-  shell: "{JELLYFISH_COUNT} -L 1 -m {config[kmer_length]} -s 10000 -t {threads} -o {output} <(zcat {input.r1} | {REVCOMP}) <(zcat {input.r2})"
+  shell: "{JELLYFISH_COUNT} -L 2 -m {config[kmer_length]} -s 10000 -t {threads} -o {output} <(zcat {input.r1} | {REVCOMP}) <(zcat {input.r2})"
 
 rule jellyfish_dump:
   input: COUNTS_DIR + "/{sample}.jf"

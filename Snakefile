@@ -39,12 +39,6 @@ GENE_COUNTS                 = KALLISTO_DIR  + "/gene_counts.tsv.gz"
 DEGS                        = GENE_EXP_DIR  + "/" + CONDITION_A + "vs" + CONDITION_B + "-DEGs.tsv"
 NORMALIZATION_FACTORS       = GENE_EXP_DIR  + "/normalization_factors.tsv"
 
-# Debug
-config['dekupl_counter']['min_recurrence'] = 2
-config['dekupl_counter']['min_recurrence_abundance'] = 1
-config['Ttest']['pvalue_threshold'] = 0.5
-config['Ttest']['log2fc_threshold'] = 1
-
 # binaries
 REVCOMP         = BIN_DIR + "/revCompFastq.pl"
 DEKUPL_COUNTER  = BIN_DIR + "/dekupl-counter"
@@ -53,6 +47,9 @@ TTEST_FILTER    = BIN_DIR + "/TtestFilter.R"
 KALLISTO        = BIN_DIR + "/kallisto"
 MERGE_COUNTS    = BIN_DIR + "/mergeCounts.pl"
 MERGE_TAGS      = BIN_DIR + "/mergeTags.pl"
+JELLYFISH       = "jellyfish"
+JELLYFISH_COUNT = JELLYFISH + " count"
+JELLYFISH_DUMP  = JELLYFISH + " dump"
 
 rule all:
   input: MERGED_DIFF_COUNTS
@@ -235,36 +232,62 @@ rule build_dekupl_counter:
     os.chdir("../../../bin")
     shell("ln -s ../share/dekupl-counter/build/tools/dekupl-counter .")
 
-# 2.2 Reverse complement left mate for stranded dekupl counts
-rule revcomp_pairs:
-  input:  FASTQ_DIR + "/{sample}_1.fastq.gz"
-  output: temp(TMP_DIR+"/{sample}_1.fastq.gz")
-  shell:  "{REVCOMP} <(zcat {input}) | gzip -c > {output}"
-
-# 2.3 Counts the k-mers on all the samples together
-rule dekupl_counter:
+rule jellyfish_count:
   input: 
-    fastq_files = expand("{tmp_folder}/{sample}_1.fastq.gz {fastq_dir}/{sample}_2.fastq.gz".split(), sample = SAMPLE_NAMES, fastq_dir = FASTQ_DIR, tmp_folder = TMP_DIR),
-    dekupl_binary = DEKUPL_COUNTER
-  output: 
-    counts = RAW_COUNTS, 
-    tmp_folder = temp(TMP_DIR),
-    tmp_output = temp(TMP_DIR + "/counts.h5")
+    r1 = FASTQ_DIR  + "/{sample}_1.fastq.gz", 
+    r2 = FASTQ_DIR  + "/{sample}_2.fastq.gz"
+  output: COUNTS_DIR + "/{sample}.jf"
   threads: 10
-  run:
-    # Create a list of fastq files separated with comma
-    fastq_list = ','.join(input.fastq_files)
+  shell: "{JELLYFISH_COUNT} -L 1 -m {config[kmer_length]} -s 10000 -t {threads} -o {output} <(zcat {input.r1} | {REVCOMP}) <(zcat {input.r2})"
 
-    # Print nice headers
-    shell("echo tag\t{SAMPLE_NAMES} | gzip -c > {output.counts}")
-    shell("""{DEKUPL_COUNTER} \
-          -kmer-size {config[kmer_length]} \
-          -min-recurrence {config[dekupl_counter][min_recurrence]} \
-          -min-recurrence-abundance {config[dekupl_counter][min_recurrence_abundance]} \
-          -paired-end -out-tmp {TMP_DIR} -nb-cores {threads} \
-          -max-memory {config[max_memory]} -max-disk {config[max_disk]} \
-          -out {output.tmp_output} \
-          -in {fastq_list} | gzip -c >> {output.counts}""")
+rule jellyfish_dump:
+  input: COUNTS_DIR + "/{sample}.jf"
+  output: COUNTS_DIR + "/{sample}.txt.gz"
+  threads: 10
+  resources: ram=10
+  shell: "{JELLYFISH_DUMP} -c {input} | sort -k 1 -S {resources.ram}G --parallel {threads}| gzip -c > {output}"
+
+rule merge_counts:
+  input: expand("{counts_dir}/{sample}.txt.gz",counts_dir=COUNTS_DIR,sample=SAMPLE_NAMES)
+  params:
+    sample_names = "\t".join(SAMPLE_NAMES)
+  output: RAW_COUNTS
+  run:
+    shell("echo 'tag\t{params.sample_names}' | gzip -c > {output}")
+    shell("""{MERGE_COUNTS} --min-recurrence {config[dekupl_counter][min_recurrence]} \
+          --min-recurrence-abundance {config[dekupl_counter][min_recurrence_abundance]} \
+          {input} | gzip -c >> {output}""")
+
+## 2.2 Reverse complement left mate for stranded dekupl counts
+#rule revcomp_pairs:
+#  input:  FASTQ_DIR + "/{sample}_1.fastq.gz"
+#  output: temp(TMP_DIR+"/{sample}_1.fastq.gz")
+#  shell:  "{REVCOMP} <(zcat {input}) | gzip -c > {output}"
+#
+## 2.3 Counts the k-mers on all the samples together
+#rule dekupl_counter:
+#  input: 
+#    fastq_files = expand("{tmp_folder}/{sample}_1.fastq.gz {fastq_dir}/{sample}_2.fastq.gz".split(), sample = SAMPLE_NAMES, fastq_dir = FASTQ_DIR, tmp_folder = TMP_DIR),
+#    dekupl_binary = DEKUPL_COUNTER
+#  output: 
+#    counts = RAW_COUNTS, 
+#    tmp_folder = temp(TMP_DIR),
+#    tmp_output = temp(TMP_DIR + "/counts.h5")
+#  threads: 10
+#  run:
+#    # Create a list of fastq files separated with comma
+#    fastq_list = ','.join(input.fastq_files)
+#
+#    # Print nice headers
+#    shell("echo tag\t{SAMPLE_NAMES} | gzip -c > {output.counts}")
+#    shell("""{DEKUPL_COUNTER} \
+#          -kmer-size {config[kmer_length]} \
+#          -min-recurrence {config[dekupl_counter][min_recurrence]} \
+#          -min-recurrence-abundance {config[dekupl_counter][min_recurrence_abundance]} \
+#          -paired-end -out-tmp {TMP_DIR} -nb-cores {threads} \
+#          -max-memory {config[max_memory]} -max-disk {config[max_disk]} \
+#          -out {output.tmp_output} \
+#          -in {fastq_list} | gzip -c >> {output.counts}""")
 
 
 ###############################################################################

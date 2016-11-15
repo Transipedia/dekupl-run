@@ -254,7 +254,7 @@ rule jellyfish_dump:
   output: COUNTS_DIR + "/{sample}.txt.gz"
   threads: 10
   resources: ram=10
-  shell: "{JELLYFISH_DUMP} -c {input} | sort -k 1 -S {resources.ram}G --parallel {threads}| gzip -c > {output}"
+  shell: "{JELLYFISH_DUMP} -c {input} | sort -k 1 -S {resources.ram}G --parallel {threads}| pigz -p {threads} -c > {output}"
 
 rule join_counts:
   input: expand("{counts_dir}/{sample}.txt.gz",counts_dir=COUNTS_DIR,sample=SAMPLE_NAMES)

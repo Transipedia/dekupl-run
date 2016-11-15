@@ -46,6 +46,7 @@ DIFF_FILTER     = BIN_DIR + "/diffFilter.pl"
 TTEST_FILTER    = BIN_DIR + "/TtestFilter.R"
 KALLISTO        = BIN_DIR + "/kallisto"
 MERGE_COUNTS    = BIN_DIR + "/mergeCounts.pl"
+JOIN_COUNTS     = BIN_DIR + "/joinCounts"
 MERGE_TAGS      = BIN_DIR + "/mergeTags.pl"
 JELLYFISH       = "jellyfish"
 JELLYFISH_COUNT = JELLYFISH + " count"
@@ -53,6 +54,14 @@ JELLYFISH_DUMP  = JELLYFISH + " dump"
 
 rule all:
   input: MERGED_DIFF_COUNTS
+
+###############################################################################
+#
+# COMPILATION
+#
+rule compile_joinCounts:
+  output: JOIN_COUNTS
+  shell: "cd share/joinCounts && make && cp joinCounts ../../bin"
 
 ###############################################################################
 #
@@ -247,15 +256,15 @@ rule jellyfish_dump:
   resources: ram=10
   shell: "{JELLYFISH_DUMP} -c {input} | sort -k 1 -S {resources.ram}G --parallel {threads}| gzip -c > {output}"
 
-rule merge_counts:
+rule join_counts:
   input: expand("{counts_dir}/{sample}.txt.gz",counts_dir=COUNTS_DIR,sample=SAMPLE_NAMES)
   params:
     sample_names = "\t".join(SAMPLE_NAMES)
   output: RAW_COUNTS
   run:
     shell("echo 'tag\t{params.sample_names}' | gzip -c > {output}")
-    shell("""{MERGE_COUNTS} --min-recurrence {config[dekupl_counter][min_recurrence]} \
-          --min-recurrence-abundance {config[dekupl_counter][min_recurrence_abundance]} \
+    shell("""{JOIN_COUNTS} -r {config[dekupl_counter][min_recurrence]} \
+          -a {config[dekupl_counter][min_recurrence_abundance]} \
           {input} | gzip -c >> {output}""")
 
 ## 2.2 Reverse complement left mate for stranded dekupl counts

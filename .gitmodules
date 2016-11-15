@@ -1,0 +1,3 @@
+[submodule "share/joinCounts"]
+	path = share/joinCounts
+	url = git@gitlab.montp.inserm.fr:transipedia-project/dekupl-joincounts.git

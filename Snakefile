@@ -65,7 +65,7 @@ rule compile_joinCounts:
     shell("cd share/joinCounts && make")
     shell("ln -s -f ../share/joinCounts/joinCounts bin/")
 
-rule compile_mergeCounts:
+rule compile_mergeTags:
   output: MERGE_TAGS
   run:
     shell("cd share/mergeTags && make")

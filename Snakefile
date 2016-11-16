@@ -43,11 +43,11 @@ NORMALIZATION_FACTORS       = GENE_EXP_DIR  + "/normalization_factors.tsv"
 REVCOMP         = BIN_DIR + "/revCompFastq.pl"
 DEKUPL_COUNTER  = BIN_DIR + "/dekupl-counter"
 DIFF_FILTER     = BIN_DIR + "/diffFilter.pl"
-TTEST_FILTER    = BIN_DIR + "/TtestFilter.R"
+TTEST_FILTER    = BIN_DIR + "/TtestFilter"
 KALLISTO        = BIN_DIR + "/kallisto"
-MERGE_COUNTS    = BIN_DIR + "/mergeCounts.pl"
 JOIN_COUNTS     = BIN_DIR + "/joinCounts"
-MERGE_TAGS      = BIN_DIR + "/mergeTags.pl"
+MERGE_COUNTS    = BIN_DIR + "/mergeCounts.pl"
+MERGE_TAGS      = BIN_DIR + "/mergeTags"
 JELLYFISH       = "jellyfish"
 JELLYFISH_COUNT = JELLYFISH + " count"
 JELLYFISH_DUMP  = JELLYFISH + " dump"
@@ -61,7 +61,22 @@ rule all:
 #
 rule compile_joinCounts:
   output: JOIN_COUNTS
-  shell: "cd share/joinCounts && make && cp joinCounts ../../bin"
+  run:
+    shell("cd share/joinCounts && make")
+    shell("ln -s -f ../share/joinCounts/joinCounts bin/")
+
+rule compile_mergeCounts:
+  output: MERGE_TAGS
+  run:
+    shell("cd share/mergeTags && make")
+    shell("ln -s -f ../share/mergeTags/mergeTags bin/")
+
+rule compile_TtestFilter:
+  input: "share/TtestFilter/TtestFilter.c"
+  output: TTEST_FILTER
+  run:
+    shell("cd share/TtestFilter && make")
+    shell("ln -s -f ../share/TtestFilter/TtestFilter bin/")
 
 ###############################################################################
 #
@@ -124,7 +139,7 @@ rule kallito_quantif:
 # 1.4 Merge all transcripts counts from kallisto abundance files
 rule transcript_counts:
   input: 
-    kallisto_outputs  = expand("{kallisto_dir}/{sample}", sample = SAMPLE_NAMES, kallisto_dir = KALLISTO_DIR),
+    kallisto_outputs  = expand("{kallisto_dir}/{sample}", sample = SAMPLE_NAMES, kallisto_dir = KALLISTO_DIR)
   output:
     TRANSCRIPT_COUNTS
   run: 
@@ -188,6 +203,7 @@ rule differential_gene_expression:
   run:
     R("""
     library(DESeq2) 
+
     # Load counts data
     countsData = read.table("{input.gene_counts}",
                             header=T,
@@ -210,16 +226,18 @@ rule differential_gene_expression:
     dds <- DESeq(dds)
 
     # Write normalization factors
-    size_factors = data.frame(sample = names(sizeFactors(dds)), normalization_factor = sizeFactors(dds), row.names=NULL)
-    write.table(size_factors,file="{output.normalization_factors}",sep="\t",quote=FALSE, row.names = FALSE)
+    size_factors = data.frame(sample = names(sizeFactors(dds)), 
+                              normalization_factor = sizeFactors(dds),
+                              row.names=NULL)
+    write.table(size_factors,
+                file="{output.normalization_factors}",
+                sep="\t",quote=FALSE, row.names = FALSE)
+
+    write(resultsNames(dds),stderr())
 
     # Write DEGs
-    res <- results(dds, contrast=c("{CONDITION_COL}","{CONDITION_A}","{CONDITION_B}"))
+    res <- results(dds, contrast = c("{CONDITION_COL}","{CONDITION_A}","{CONDITION_B}"))
     write.table(res,file="{output.differentially_expressed_genes}",sep="\t",quote=FALSE)
-
-    #res_selection <- subset(res,padj < padj_threshold & abs(log2FoldChange) > log2foldchange_threshold)
-    #write.table(res_selection,file=params$DEGS_calling_output,sep="\t",quote=FALSE)
-    
     """)
 
 ###############################################################################
@@ -227,20 +245,6 @@ rule differential_gene_expression:
 # STEP 2: KMER COUNTS
 #         Compiple DEkupl counter and count k-mers on all the samples
 #
-# 2.1 Compile dekupl counter and create a symlink in bin directory
-rule build_dekupl_counter:
-  output: DEKUPL_COUNTER
-  threads: 10
-  run: 
-    os.chdir("share/dekupl-counter")
-    if not os.path.exists("build"):
-      os.mkdir("build")
-    os.chdir("build")
-    shell("cmake -DNONCANONICAL=1 ..")
-    shell("make -j {threads}")
-    os.chdir("../../../bin")
-    shell("ln -s ../share/dekupl-counter/build/tools/dekupl-counter .")
-
 rule jellyfish_count:
   input: 
     r1 = FASTQ_DIR  + "/{sample}_1.fastq.gz", 
@@ -257,7 +261,9 @@ rule jellyfish_dump:
   shell: "{JELLYFISH_DUMP} -c {input} | sort -k 1 -S {resources.ram}G --parallel {threads}| pigz -p {threads} -c > {output}"
 
 rule join_counts:
-  input: expand("{counts_dir}/{sample}.txt.gz",counts_dir=COUNTS_DIR,sample=SAMPLE_NAMES)
+  input: 
+    fastq_files = expand("{counts_dir}/{sample}.txt.gz",counts_dir=COUNTS_DIR,sample=SAMPLE_NAMES),
+    binary = JOIN_COUNTS
   params:
     sample_names = "\t".join(SAMPLE_NAMES)
   output: RAW_COUNTS
@@ -265,39 +271,7 @@ rule join_counts:
     shell("echo 'tag\t{params.sample_names}' | gzip -c > {output}")
     shell("""{JOIN_COUNTS} -r {config[dekupl_counter][min_recurrence]} \
           -a {config[dekupl_counter][min_recurrence_abundance]} \
-          {input} | gzip -c >> {output}""")
-
-## 2.2 Reverse complement left mate for stranded dekupl counts
-#rule revcomp_pairs:
-#  input:  FASTQ_DIR + "/{sample}_1.fastq.gz"
-#  output: temp(TMP_DIR+"/{sample}_1.fastq.gz")
-#  shell:  "{REVCOMP} <(zcat {input}) | gzip -c > {output}"
-#
-## 2.3 Counts the k-mers on all the samples together
-#rule dekupl_counter:
-#  input: 
-#    fastq_files = expand("{tmp_folder}/{sample}_1.fastq.gz {fastq_dir}/{sample}_2.fastq.gz".split(), sample = SAMPLE_NAMES, fastq_dir = FASTQ_DIR, tmp_folder = TMP_DIR),
-#    dekupl_binary = DEKUPL_COUNTER
-#  output: 
-#    counts = RAW_COUNTS, 
-#    tmp_folder = temp(TMP_DIR),
-#    tmp_output = temp(TMP_DIR + "/counts.h5")
-#  threads: 10
-#  run:
-#    # Create a list of fastq files separated with comma
-#    fastq_list = ','.join(input.fastq_files)
-#
-#    # Print nice headers
-#    shell("echo tag\t{SAMPLE_NAMES} | gzip -c > {output.counts}")
-#    shell("""{DEKUPL_COUNTER} \
-#          -kmer-size {config[kmer_length]} \
-#          -min-recurrence {config[dekupl_counter][min_recurrence]} \
-#          -min-recurrence-abundance {config[dekupl_counter][min_recurrence_abundance]} \
-#          -paired-end -out-tmp {TMP_DIR} -nb-cores {threads} \
-#          -max-memory {config[max_memory]} -max-disk {config[max_disk]} \
-#          -out {output.tmp_output} \
-#          -in {fastq_list} | gzip -c >> {output.counts}""")
-
+          {input.fastq_files} | gzip -c >> {output}""")
 
 ###############################################################################
 #
@@ -311,22 +285,19 @@ rule gencode_download:
   shell: "wget ftp://ftp.sanger.ac.uk/pub/gencode/Gencode_human/release_24/gencode.v24.transcripts.fa.gz -O {output}"
 
 # 3.2 Counts k-mer of all gencode transcript (for further filtration)
-rule gencode_counts:
+rule gencode_count:
   input: GENCODE_FASTA
-  output: 
-    counts = GENCODE_COUNTS,
-    tmp_folder = temp(TMP_DIR),
-    tmp_output = temp(TMP_DIR + "/counts.h5")
+  output: temp(GENCODE_FASTA + ".jf")
   threads: 10
-  shell: """{DEKUPL_COUNTER} \
-            -kmer-size {config[kmer_length]} \
-            -min-recurrence 1 \
-            -min-recurrence-abundance 1 \
-            -abundance-min 1 \
-            -max-memory {config[max_memory]} -max-disk {config[max_disk]} \
-            -out-tmp {TMP_DIR} -nb-cores {threads} \
-            -out {output.tmp_output} \
-            -in {input} | gzip -c > {output.counts}"""
+  shell: """{JELLYFISH_COUNT} -m {config[kmer_length]} \
+            -s 10000 -t {threads} -o {output} <(zcat {input})"""
+
+rule gencode_dump:
+  input: GENCODE_FASTA + ".jf"
+  output: GENCODE_COUNTS
+  threads: 10
+  resources: ram=4
+  shell: "{JELLYFISH_DUMP} -c {input} | sort -k 1 -S {resources.ram}G --parallel {threads}| pigz -p {threads} -c > {output}"
 
 # 3.3 Filter counter k-mer that are present in the gencode set
 rule filter_gencode_counts:
@@ -335,7 +306,6 @@ rule filter_gencode_counts:
     gencode_counts = GENCODE_COUNTS
   output: NO_GENCODE_COUNTS
   shell: "{DIFF_FILTER} {input.gencode_counts} {input.counts} | gzip -c > {output}"
-
 
 ###############################################################################
 #
@@ -346,16 +316,22 @@ rule filter_gencode_counts:
 rule test_diff_counts:
   input: 
     counts = NO_GENCODE_COUNTS,
-    sample_conditions = SAMPLE_CONDITIONS_FULL
+    sample_conditions = SAMPLE_CONDITIONS_FULL,
+    binary = TTEST_FILTER
   output: DIFF_COUNTS
-  shell: "{TTEST_FILTER} {input.counts} {input.sample_conditions} {CONDITION_COL} {CONDITION_A} {CONDITION_B} {config[Ttest][pvalue_threshold]} {config[Ttest][log2fc_threshold]} | gzip -c > {output}"
+  shell: """{TTEST_FILTER} \
+            -p {config[Ttest][pvalue_threshold]} \
+            -f {config[Ttest][log2fc_threshold]} \
+            {input.counts} {input.sample_conditions} \
+            {CONDITION_A} {CONDITION_B} | gzip -c > {output}"""
 
 rule merge_tags:
   input:
-    DIFF_COUNTS
+    counts = DIFF_COUNTS,
+    binary = MERGE_TAGS
   output:
     MERGED_DIFF_COUNTS
-  shell: "{MERGE_TAGS} {input} | gzip -c > {output}"
+  shell: "{MERGE_TAGS} -k {config[kmer_length]} {input} | gzip -c > {output}"
 
 ###############################################################################
 #

@@ -7,6 +7,7 @@ use Pod::Usage;
 use Getopt::Long;
 
 use CracTools::Utils;
+use CracTools::Output;
 
 =head1 NAME
 
@@ -14,12 +15,16 @@ mergeCounts.pl - merge multiple counts files into a single counts table
 
 =head1 SYNOPSIS
 
-  mergeCounts.pl counts1.tsv counts2.tsv > merged-counts.tsv
+  mergeCounts.pl counts1.tsv counts2.tsv [--sep "\t"] [--field 1] [--no-header] > merged-counts.tsv
 
   Options:
 
-    --min-reccurence           INT  (default : 1)
-    --min-reccurence-abundance INT  (default:  1)
+    --sep               (default : "\t") Input separator
+    --output-sep        (default:  "\t") Output separator
+    --field             (default : 1)
+    --no-header         Tell convertList.pl to keep the header (as-is)
+    --min-counts=<int>  Filter-out rows that have no samples with a count higher to this threshold
+                        (default : 0)
 
 =head1 AUTHOR
 
@@ -27,84 +32,58 @@ Jérôme Audoux C<jerome.audoux@inserm.fr>
 
 =cut
 
-my $min_recurrence = 1;
-my $min_recurrence_abundance = 1;
+my $sep = "\t";
+my $output_sep = "\t";
+my $field = 1;
+my $no_header = 0;
+my $min_counts = 0;
 
-GetOptions("min-recurrence=i"           => \$min_recurrence,
-           "min-recurrence-abundance=i" => \$min_recurrence_abundance,
+GetOptions("sep=s"                => \$sep,
+           "output-sep=s"         => \$output_sep,
+           "field=i"              => \$field,
+           "no-header"            => \$no_header,
+           "min-counts=i"         => \$min_counts,
 ) or pod2usage(0);
 
 my @count_files = @ARGV;
 
 pod2usage(0) if !@count_files;
 
-my @counts_files = @ARGV;
-my @counts_it;
+my %counts;
+my @samples;
 
+foreach my $file (@count_files) {
+  my $fh = CracTools::Utils::getReadingFileHandle($file);
+  my @headers;
+  while(<$fh>) {
+    next if $_ =~ /^#/;
+    chomp;
+    my($feat,@values) = split($sep,$_);
 
-# Open all counts file
-foreach my $f (@counts_files) {
-  my $fh = CracTools::Utils::getReadingFileHandle($f);
-  push(@counts_it,{fh => $fh});
-}
-my $min_kmer = undef;
-
-# Init with the first kmer of each files
-foreach my $it (@counts_it) {
-  my $fh = $it->{fh};
-  my $l = <$fh>;
-  chomp $l;
-  my ($kmer,$count) = split(/\s+/,$l,2);
-  $it->{kmer} = $kmer;
-  $it->{count} = $count;
-  if(!defined $min_kmer || $kmer lt $min_kmer) {
-    $min_kmer = $kmer;
-  }
-}
-
-my $read = 1;
-while($read) {
-  $read = 0;
-
-  # Get counts for the min_kmer
-  my @counts;
-  my $new_min_kmer;
-  foreach my $it (@counts_it) {
-    if(defined $it->{kmer} && $it->{kmer} eq $min_kmer) {
-      push @counts, $it->{count};
-      # Get next k-kmer in the file
-      my $fh = $it->{fh};
-      my $l = <$fh>;
-      if($l) {
-        chomp $l;
-        my($kmer,$count) = split(/\s+/,$l,2);
-        $it->{kmer} = $kmer;
-        $it->{count} = $count;
-        $read = 1;
+    # If this is the first line, the we can retrieve
+    # the header line
+    if(!@headers) {
+      if($no_header) {
+        @headers = map { "$file"."$_" } (1..scalar @values);
       } else {
-        $it->{kmer} = undef;
+        @headers = @values;
       }
-    } else {
-      push @counts, 0;
+      next;
     }
-    if(defined $it->{kmer} && (!defined $new_min_kmer || $it->{kmer} lt $new_min_kmer)) {
-      $new_min_kmer = $it->{kmer};
-    }
-  }
-
-  # Check the reccurence
-  my $rec = 0;
-  foreach my $c (@counts) {
-    if($c >= $min_recurrence_abundance) {
-      $rec++
+    
+    for(my $i = 0; $i < @values; $i++) {
+      $counts{$feat}{$headers[$i]} = $values[$i];
     }
   }
-  
-  # Print the count
-  if($rec >= $min_recurrence) {
-    print join("\t",$min_kmer,@counts),"\n";
-  }
-
-  $min_kmer = $new_min_kmer;
+  push @samples,@headers;
 }
 
+my $output = CracTools::Output->new();
+$output->printLine("feature",@samples) if !$no_header;
+foreach my $feature (keys %counts) {
+  my $max_row_count = 0;
+  map { $max_row_count = $counts{$feature}{$_} if $counts{$feature}{$_} > $max_row_count } @samples;
+  if($max_row_count >= $min_counts) {
+    $output->printLine($feature,map { defined $counts{$feature}{$_}? $counts{$feature}{$_} : 0} @samples);
+  }
+}

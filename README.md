@@ -7,6 +7,8 @@ DE-kupl is a pipline, that finds differentially expressed k-mers between RNA-Seq
 Before using Dekupl, install these dependencies.
 
 - Snakemake
+- jellyfish
+- pigz
 - CMake
 - R: 
   * DESEq2 : open R and execute :

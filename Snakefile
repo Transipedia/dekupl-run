@@ -51,6 +51,7 @@ MERGE_TAGS      = BIN_DIR + "/mergeTags"
 JELLYFISH       = "jellyfish"
 JELLYFISH_COUNT = JELLYFISH + " count"
 JELLYFISH_DUMP  = JELLYFISH + " dump"
+PIGZ            = "pigz"
 
 rule all:
   input: MERGED_DIFF_COUNTS
@@ -258,7 +259,7 @@ rule jellyfish_dump:
   output: COUNTS_DIR + "/{sample}.txt.gz"
   threads: 10
   resources: ram=10
-  shell: "{JELLYFISH_DUMP} -c {input} | sort -k 1 -S {resources.ram}G --parallel {threads}| pigz -p {threads} -c > {output}"
+  shell: "{JELLYFISH_DUMP} -c {input} | sort -k 1 -S {resources.ram}G --parallel {threads}| {PIGZ} -p {threads} -c > {output}"
 
 rule join_counts:
   input: 
@@ -297,7 +298,7 @@ rule gencode_dump:
   output: GENCODE_COUNTS
   threads: 10
   resources: ram=4
-  shell: "{JELLYFISH_DUMP} -c {input} | sort -k 1 -S {resources.ram}G --parallel {threads}| pigz -p {threads} -c > {output}"
+  shell: "{JELLYFISH_DUMP} -c {input} | sort -k 1 -S {resources.ram}G --parallel {threads}| {PIGZ} -p {threads} -c > {output}"
 
 # 3.3 Filter counter k-mer that are present in the gencode set
 rule filter_gencode_counts:

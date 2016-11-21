@@ -332,7 +332,7 @@ rule merge_tags:
     binary = MERGE_TAGS
   output:
     MERGED_DIFF_COUNTS
-  shell: "{MERGE_TAGS} -k {config[kmer_length]} {input} | gzip -c > {output}"
+  shell: "{MERGE_TAGS} -k {config[kmer_length]} {input.counts} | gzip -c > {output}"
 
 ###############################################################################
 #

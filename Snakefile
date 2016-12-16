@@ -11,6 +11,8 @@ SAMPLE_NAMES    = [i['name'] for i in config["samples"]]
 CONDITION_COL   = "condition"
 CONDITION_A     = config['Ttest']['condition']['A']
 CONDITION_B     = config['Ttest']['condition']['B']
+MAX_CPU         = 1000
+MAX_RAM         = 10
 
 # DIRECTORIES
 BIN_DIR         = "bin"
@@ -28,8 +30,13 @@ RAW_COUNTS                  = COUNTS_DIR    + "/raw-counts.tsv.gz"
 NO_GENCODE_COUNTS           = COUNTS_DIR    + "/noGENCODE-counts.tsv.gz"
 DIFF_COUNTS                 = KMER_DE_DIR   + "/diff-counts.tsv.gz"
 MERGED_DIFF_COUNTS          = KMER_DE_DIR   + "/merged-diff-counts.tsv.gz"
+ASSEMBLIES_FASTA            = KMER_DE_DIR   + "/merged-diff-counts.fa.gz"
+ASSEMBLIES_BAM              = KMER_DE_DIR   + "/merged-diff-counts.bam"
 SAMPLE_CONDITIONS           = METADATA_DIR  + "/sample_conditions.tsv"
 SAMPLE_CONDITIONS_FULL      = METADATA_DIR  + "/sample_conditions_full.tsv"
+GENOME_FASTA                = REFERENCE_DIR + "/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz"
+GSNAP_INDEX_DIR             = REFERENCE_DIR + "/GSNAP"
+GSNAP_INDEX_NAME            = "Homo_sapiens.GRCh38.dna.primary_assembly"
 GENCODE_FASTA               = REFERENCE_DIR + "/gencode.v24.transcripts.fa.gz"
 GENCODE_COUNTS              = REFERENCE_DIR + "/gencode.v24.transcripts.tsv.gz"
 TRANSCRIPT_TO_GENE_MAPPING  = REFERENCE_DIR + "/transcript_to_gene_mapping.tsv"
@@ -53,12 +60,15 @@ JELLYFISH_COUNT = JELLYFISH + " count"
 JELLYFISH_DUMP  = JELLYFISH + " dump"
 PIGZ            = "pigz"
 
-rule all:
-  input: MERGED_DIFF_COUNTS
+rule build:
+  input: JOIN_COUNTS, MERGE_TAGS, TTEST_FILTER, KALLISTO, KALLISTO_INDEX, GSNAP_INDEX_DIR + "/" + GSNAP_INDEX_NAME
+
+rule run:
+  input: ASSEMBLIES_BAM
 
 ###############################################################################
 #
-# COMPILATION
+# SOFTWARE INSTALLATION
 #
 rule compile_joinCounts:
   output: JOIN_COUNTS
@@ -78,6 +88,48 @@ rule compile_TtestFilter:
   run:
     shell("cd share/TtestFilter && make")
     shell("ln -s -f ../share/TtestFilter/TtestFilter bin/")
+
+rule download_kallisto:
+  output: 
+    kallisto_symlink = KALLISTO,
+    kallisto_tarball = temp("share/kallisto.tar.gz")
+  run:
+    shell("wget https://github.com/pachterlab/kallisto/releases/download/v0.43.0/kallisto_linux-v0.43.0.tar.gz -O {output.kallisto_tarball}")
+    shell("tar -xzf {output.kallisto_tarball} -C share")
+    shell("ln -s ../share/kallisto_linux-v0.43.0/kallisto bin/kallisto")
+
+###############################################################################
+#
+# DOWNLOAD REFERENCE FILES
+#
+# Download the gencode transcripts in fasta format
+rule gencode_download:
+  output: GENCODE_FASTA
+  shell: "wget ftp://ftp.sanger.ac.uk/pub/gencode/Gencode_human/release_24/gencode.v24.transcripts.fa.gz -O {output}"
+
+# Download the genome from Ensembl
+rule genome_download:
+  output: GENOME_FASTA
+  #shell: "wget ftp://ftp.ensembl.org/pub/release-86/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz -O {output}"
+  shell: "wget ftp://ftp.ensembl.org/pub/release-86/fasta/ciona_intestinalis/dna/Ciona_intestinalis.KH.dna.chromosome.10.fa.gz -O {output}"
+
+###############################################################################
+#
+# BUILD INDEXES FROM REFERENCE FILES
+#
+# Create a Kallisto index of the reference transrciptome
+rule kallisto_index:
+  input: 
+    transcripts   = GENCODE_FASTA,
+    kallisto_bin  = KALLISTO,
+  output: 
+    KALLISTO_INDEX
+  shell: "{KALLISTO} index -i {output} {input.transcripts}"
+
+rule gsnap_index:
+  input: GENOME_FASTA
+  output: GSNAP_INDEX_DIR + "/" + GSNAP_INDEX_NAME
+  shell: "gmap_build -D {GSNAP_INDEX_DIR} -d {GSNAP_INDEX_NAME} --gunzip {input}"
 
 ###############################################################################
 #
@@ -106,25 +158,6 @@ rule sample_conditions_full:
 # STEP 1: DIFFERENTIAL GENE EXPRESSION
 #         Download kallisto, and quantify gene expression for all
 #         the samples
-#
-# 1.1 Download a pre-compiled version of Kallisto from github
-rule download_kallisto:
-  output: 
-    kallisto_symlink = KALLISTO,
-    kallisto_tarball = temp("share/kallisto.tar.gz")
-  run:
-    shell("wget https://github.com/pachterlab/kallisto/releases/download/v0.43.0/kallisto_linux-v0.43.0.tar.gz -O {output.kallisto_tarball}")
-    shell("tar -xzf {output.kallisto_tarball} -C share")
-    shell("ln -s ../share/kallisto_linux-v0.43.0/kallisto bin/kallisto")
-
-# 1.2 Create a Kallisto index of the reference transrciptome
-rule kallisto_index:
-  input: 
-    transcripts   = GENCODE_FASTA,
-    kallisto_bin  = KALLISTO,
-  output: 
-    KALLISTO_INDEX
-  shell: "{KALLISTO} index -i {output} {input.transcripts}"
 
 # 1.3 Generic rule to quantify a sample with kallisto
 rule kallito_quantif:
@@ -251,14 +284,14 @@ rule jellyfish_count:
     r1 = FASTQ_DIR  + "/{sample}_1.fastq.gz", 
     r2 = FASTQ_DIR  + "/{sample}_2.fastq.gz"
   output: COUNTS_DIR + "/{sample}.jf"
-  threads: 10
+  threads: MAX_CPU
   shell: "{JELLYFISH_COUNT} -L 2 -m {config[kmer_length]} -s 10000 -t {threads} -o {output} <(zcat {input.r1} | {REVCOMP}) <(zcat {input.r2})"
 
 rule jellyfish_dump:
   input: COUNTS_DIR + "/{sample}.jf"
   output: COUNTS_DIR + "/{sample}.txt.gz"
-  threads: 10
-  resources: ram=10
+  threads: MAX_CPU
+  resources: ram=MAX_RAM
   shell: "{JELLYFISH_DUMP} -c {input} | sort -k 1 -S {resources.ram}G --parallel {threads}| {PIGZ} -p {threads} -c > {output}"
 
 rule join_counts:
@@ -280,23 +313,19 @@ rule join_counts:
 #         Download gencode transcripts set and remove the k-mer occuring this
 #         set from the one found in the experimental data
 #
-# 3.1 Download the gencode transcripts in fasta format
-rule gencode_download:
-  output: GENCODE_FASTA
-  shell: "wget ftp://ftp.sanger.ac.uk/pub/gencode/Gencode_human/release_24/gencode.v24.transcripts.fa.gz -O {output}"
 
 # 3.2 Counts k-mer of all gencode transcript (for further filtration)
 rule gencode_count:
   input: GENCODE_FASTA
   output: temp(GENCODE_FASTA + ".jf")
-  threads: 10
+  threads: MAX_CPU
   shell: """{JELLYFISH_COUNT} -m {config[kmer_length]} \
             -s 10000 -t {threads} -o {output} <(zcat {input})"""
 
 rule gencode_dump:
   input: GENCODE_FASTA + ".jf"
   output: GENCODE_COUNTS
-  threads: 10
+  threads: MAX_CPU
   resources: ram=4
   shell: "{JELLYFISH_DUMP} -c {input} | sort -k 1 -S {resources.ram}G --parallel {threads}| {PIGZ} -p {threads} -c > {output}"
 
@@ -337,5 +366,19 @@ rule merge_tags:
 ###############################################################################
 #
 # STEP 4: ANNOTATED DIFF K-MERS
-#         Apply a T-test on all new k-mers to select only those that are
-#         differentially expressed.
+rule assembly_fasta:
+  input: MERGED_DIFF_COUNTS
+  output: ASSEMBLIES_FASTA
+  shell: """
+    zcat {input} | tail -n+2 | awk '{{print ">"$3"\\n"$2}}' | gzip -c > {output}
+  """
+
+rule gsnap_align:
+  input: ASSEMBLIES_FASTA
+  output: ASSEMBLIES_BAM
+  threads: 10
+  shell: """gsnap -D {GSNAP_INDEX_DIR} -d {GSNAP_INDEX_NAME} \
+            --gunzip -t {threads} -A sam -B 2 -N 1 {input} \
+            | samtools view -bS - \
+            | samtools sort - -o {output} \
+            && samtools index {output}"""

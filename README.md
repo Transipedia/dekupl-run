@@ -9,6 +9,7 @@ Before using Dekupl, install these dependencies.
 - Snakemake
 - jellyfish
 - pigz
+- gsnap
 - CMake
 - R: 
   * DESEq2 : open R and execute :
@@ -28,3 +29,11 @@ Before using Dekupl, install these dependencies.
 # FAQ
 
 - if new samples are added to the config.json, make sure to remove the sample_conditions.tsv file in order to force SnakeMake to re-make all targets that depends on this file
+
+# TODO
+
+- Create a dekupl binary with two commands :
+  - `dekupl build_index {genome}`:
+    This command will download reference files and create all indexes
+  - `dekupl run {dekupl_index} {config.yml} {output_dir}`:
+    This command will run the dekupl pipeline

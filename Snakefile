@@ -11,8 +11,12 @@ SAMPLE_NAMES    = [i['name'] for i in config["samples"]]
 CONDITION_COL   = "condition"
 CONDITION_A     = config['Ttest']['condition']['A']
 CONDITION_B     = config['Ttest']['condition']['B']
+LIB_TYPE        = "rf"
 MAX_CPU         = 1000
 MAX_RAM         = 10
+
+if 'lib_type' in config
+  LIB_TYPE = config['lib_type']
 
 # DIRECTORIES
 BIN_DIR         = "bin"
@@ -286,7 +290,13 @@ rule jellyfish_count:
     r2 = FASTQ_DIR  + "/{sample}_2.fastq.gz"
   output: COUNTS_DIR + "/{sample}.jf"
   threads: MAX_CPU
-  shell: "{JELLYFISH_COUNT} -L 2 -m {config[kmer_length]} -s 10000 -t {threads} -o {output} <(zcat {input.r1} | {REVCOMP}) <(zcat {input.r2})"
+  run: 
+    if LIB_TYPE == 'rf'
+      shell("{JELLYFISH_COUNT} -L 2 -m {config[kmer_length]} -s 10000 -t {threads} -o {output} <(zcat {input.r1} | {REVCOMP}) <(zcat {input.r2})")
+    elif LIB_TYPE == 'fr'
+      shell("{JELLYFISH_COUNT} -L 2 -m {config[kmer_length]} -s 10000 -t {threads} -o {output} <(zcat {input.r1}) <(zcat {input.r2} | {REVCOMP})")
+    else
+      sys.exit('Unknown library type')
 
 rule jellyfish_dump:
   input: COUNTS_DIR + "/{sample}.jf"

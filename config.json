@@ -5,6 +5,7 @@
   "max_memory": 8000,
   "max_disk": 10000,
   "kmer_length": 31,
+  "lib_type": "rf", 
 
   "dekupl_counter": {
     "min_recurrence": 3,

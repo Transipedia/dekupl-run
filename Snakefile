@@ -78,6 +78,7 @@ rule compile_joinCounts:
 
 rule compile_mergeTags:
   output: MERGE_TAGS
+  input: "share/mergeTags/mergeTags.c"
   run:
     shell("cd share/mergeTags && make")
     shell("ln -s -f ../share/mergeTags/mergeTags bin/")

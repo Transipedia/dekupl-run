@@ -115,8 +115,8 @@ rule gencode_download:
 # Download the genome from Ensembl
 rule genome_download:
   output: GENOME_FASTA
-  #shell: "wget ftp://ftp.ensembl.org/pub/release-86/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz -O {output}"
-  shell: "wget ftp://ftp.ensembl.org/pub/release-86/fasta/ciona_intestinalis/dna/Ciona_intestinalis.KH.dna.chromosome.10.fa.gz -O {output}"
+  shell: "wget ftp://ftp.ensembl.org/pub/release-86/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz -O {output}"
+  #shell: "wget ftp://ftp.ensembl.org/pub/release-86/fasta/ciona_intestinalis/dna/Ciona_intestinalis.KH.dna.chromosome.10.fa.gz -O {output}"
 
 ###############################################################################
 #

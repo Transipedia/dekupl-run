@@ -72,7 +72,7 @@ JELLYFISH_DUMP  = JELLYFISH + " dump"
 PIGZ            = "pigz"
 
 rule all:
-  input: ASSEMBLIES_BAM
+  input: MERGED_DIFF_COUNTS
 
 ###############################################################################
 #
@@ -537,24 +537,24 @@ rule merge_tags:
 ###############################################################################
 #
 # STEP 4: ANNOTATED DIFF K-MERS
-rule assembly_fasta:
-  input: MERGED_DIFF_COUNTS
-  output: ASSEMBLIES_FASTA
-  shell: """
-    zcat {input} | tail -n+2 | awk '{{print ">"$3"\\n"$2}}' | gzip -c > {output}
-  """
-
-rule gsnap_align:
-  input: ASSEMBLIES_FASTA
-  output: ASSEMBLIES_BAM
-  threads: 10
-  shell: """
-  
-  	gsnap -D {GSNAP_INDEX_DIR} -d {GSNAP_INDEX_NAME} \
-            --gunzip -t {threads} -A sam -B 2 -N 1 {input} \
-            | samtools view -bS - \
-            | samtools sort - -o {output} \
-            && samtools index {output}
-            
-            
-         """
+#rule assembly_fasta:
+#  input: MERGED_DIFF_COUNTS
+#  output: ASSEMBLIES_FASTA
+#  shell: """
+#    zcat {input} | tail -n+2 | awk '{{print ">"$3"\\n"$2}}' | gzip -c > {output}
+#  """
+#
+#rule gsnap_align:
+#  input: ASSEMBLIES_FASTA
+#  output: ASSEMBLIES_BAM
+#  threads: 10
+#  shell: """
+#  
+#  	gsnap -D {GSNAP_INDEX_DIR} -d {GSNAP_INDEX_NAME} \
+#            --gunzip -t {threads} -A sam -B 2 -N 1 {input} \
+#            | samtools view -bS - \
+#            | samtools sort - -o {output} \
+#            && samtools index {output}
+#            
+#            
+#         """

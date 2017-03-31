@@ -22,7 +22,7 @@ Before using Dekupl, install these dependencies.
 
 # USAGE
 
-1. Clone this repository to your cluster
+1. Clone this repository including submodules : `git clone --recursive git@github.com:Transipedia/dekupl-run.git`
 2. Edit the config.json file to add the list of your samples, their conditions and the location their FASTQ files
 3. Run the pipeline with then `snakemake -jNB_THREADS -p` command 
 

@@ -24,7 +24,7 @@ Before using Dekupl, install these dependencies.
 
 1. Clone this repository including submodules : `git clone --recursive git@github.com:Transipedia/dekupl-run.git`
 2. Edit the config.json file to add the list of your samples, their conditions and the location their FASTQ files
-3. Run the pipeline with then `snakemake -jNB_THREADS -p` command 
+3. Run the pipeline with then `snakemake -jNB_THREADS -p` command. Replace NB_THREADS with the number of threads.
 
 # FAQ
 

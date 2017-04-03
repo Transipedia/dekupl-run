@@ -9,7 +9,7 @@ Before using Dekupl, install these dependencies.
 - Snakemake
 - jellyfish
 - pigz
-- gsnap
+- [gsnap](http://research-pub.gene.com/gmap/)
 - CMake
 - R: 
   * DESEq2 : open R and execute :

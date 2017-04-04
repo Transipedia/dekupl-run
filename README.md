@@ -1,6 +1,6 @@
 # DE-kupl
 
-DE-kupl is a pipline, that finds differentially expressed k-mers between RNA-Seq dataset.
+DE-kupl is a pipeline that finds differentially expressed k-mers between RNA-Seq datasets.
 
 # INSTALL
 

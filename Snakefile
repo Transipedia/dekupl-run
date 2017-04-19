@@ -352,35 +352,23 @@ rule jellyfish_count:
     exec_time = LOGS + "/{sample}_jellyfishRawCounts_exec_time.log"
   threads: 10
   run:
+    options = "-L 2 -m {config[kmer_length]} -s 10000 -t {threads} -o {output} -F 2"
+
     if LIB_TYPE == "rf":
-      shell(
-      """
-      
-      echo -e \"******\" >{log.exec_time}
-      echo -e \"start of rule jellyfish_count (raw counts) : $(date)\n\" >>{log.exec_time}
-      echo -e \"R1 is rev comp\n\" >>{log.exec_time}
-      
-      {JELLYFISH_COUNT} -L 2 -m {config[kmer_length]} -s 10000 -t {threads} -o {output} -F 2 <(zcat {input.r1} | {REVCOMP}) <(zcat {input.r2})
-      
-      echo -e \"\nend of rule jellyfish_count : $(date)\n\" >>{log.exec_time} 
-      echo -e \"******\" >>{log.exec_time}
-      
-      """)
+      options += " <(zcat {input.r1} | {REVCOMP}) <(zcat {input.r2})"
     elif LIB_TYPE == "fr":
-      shell("""
-      
-      echo -e \"******\" >{log.exec_time}
-      echo -e \"start of rule jellyfish_count (raw counts) : $(date)\n\" >>{log.exec_time}
-      echo -e \"R2 is rev comp\n\" >>{log.exec_time}
-      
-      {JELLYFISH_COUNT} -L 2 -m {config[kmer_length]} -s 10000 -t {threads} -o {output} -F 2 <(zcat {input.r1}) <(zcat {input.r2} | {REVCOMP})
-      
-      echo -e \"\nend of rule jellyfish_count : $(date)\n\" >>{log.exec_time} 
-      echo -e \"******\" >>{log.exec_time}
-      
-      """)
+      options += " <(zcat {input.r1}) <(zcat {input.r2} | {REVCOMP})"
+    elif LIBE_TYPE == "unstranded":
+      options += " -C <(zcat {input.r1}) <(zcat {input.r2})"
     else:
       sys.exit('Unknown library type')
+
+    shell("echo -e \"******\" >{log.exec_time}")
+    shell("echo -e \"start of rule jellyfish_count (raw counts) : $(date)\n\" >>{log.exec_time}")
+    shell("echo -e \"R1 is rev comp\n\" >>{log.exec_time}")
+    shell("{JELLYFISH_COUNT} " + options)
+    shell("echo -e \"\nend of rule jellyfish_count : $(date)\n\" >>{log.exec_time}")
+    shell("echo -e \"******\" >>{log.exec_time}")
 
 rule jellyfish_dump:
   input: COUNTS_DIR + "/{sample}.jf"
@@ -438,8 +426,11 @@ rule gencode_count:
   input: GENCODE_FASTA
   output: temp(GENCODE_FASTA + ".jf")
   threads: MAX_CPU
-  shell: """{JELLYFISH_COUNT} -m {config[kmer_length]} \
-            -s 10000 -t {threads} -o {output} <(zcat {input})"""
+  run:
+    options = "-m {config[kmer_length]} -s 10000 -t {threads} -o {output}"
+    if LIBE_TYPE == "unstranded":
+      options += " -C"
+    shell("{JELLYFISH_COUNT} " + options + " <(zcat {input})")
 
 rule gencode_dump:
   input: GENCODE_FASTA + ".jf"

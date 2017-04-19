@@ -358,7 +358,7 @@ rule jellyfish_count:
       options += " <(zcat {input.r1} | {REVCOMP}) <(zcat {input.r2})"
     elif LIB_TYPE == "fr":
       options += " <(zcat {input.r1}) <(zcat {input.r2} | {REVCOMP})"
-    elif LIBE_TYPE == "unstranded":
+    elif LIB_TYPE == "unstranded":
       options += " -C <(zcat {input.r1}) <(zcat {input.r2})"
     else:
       sys.exit('Unknown library type')
@@ -428,7 +428,7 @@ rule gencode_count:
   threads: MAX_CPU
   run:
     options = "-m {config[kmer_length]} -s 10000 -t {threads} -o {output}"
-    if LIBE_TYPE == "unstranded":
+    if LIB_TYPE == "unstranded":
       options += " -C"
     shell("{JELLYFISH_COUNT} " + options + " <(zcat {input})")
 

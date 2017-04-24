@@ -25,6 +25,8 @@ while(my $counts_line = <$counts_fh>) {
     $diff_line = <$diff_fh>;
     if($diff_line) {
       ($diff_tag) = split /\s+/, $diff_line, 2;
+    } else {
+      $diff_tag = undef;
     }
   }
   if(!$diff_tag || $diff_tag ne $tag) {

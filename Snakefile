@@ -354,18 +354,20 @@ rule jellyfish_count:
   run:
     options = "-L 2 -m {config[kmer_length]} -s 10000 -t {threads} -o {output} -F 2"
 
+    shell("echo -e \"******\" >{log.exec_time}")
+    shell("echo -e \"start of rule jellyfish_count (raw counts) : $(date)\n\" >>{log.exec_time}")
+
     if LIB_TYPE == "rf":
       options += " <(zcat {input.r1} | {REVCOMP}) <(zcat {input.r2})"
+      shell("echo -e \"R1 is rev comp\n\" >>{log.exec_time}")
     elif LIB_TYPE == "fr":
       options += " <(zcat {input.r1}) <(zcat {input.r2} | {REVCOMP})"
+      shell("echo -e \"R2 is rev comp\n\" >>{log.exec_time}")
     elif LIB_TYPE == "unstranded":
       options += " -C <(zcat {input.r1}) <(zcat {input.r2})"
     else:
       sys.exit('Unknown library type')
 
-    shell("echo -e \"******\" >{log.exec_time}")
-    shell("echo -e \"start of rule jellyfish_count (raw counts) : $(date)\n\" >>{log.exec_time}")
-    shell("echo -e \"R1 is rev comp\n\" >>{log.exec_time}")
     shell("{JELLYFISH_COUNT} " + options)
     shell("echo -e \"\nend of rule jellyfish_count : $(date)\n\" >>{log.exec_time}")
     shell("echo -e \"******\" >>{log.exec_time}")
@@ -461,8 +463,6 @@ rule filter_gencode_counts:
   log: 
     exec_time = LOGS + "/filter_gencode_counts_exec_time.log"
   shell: """
-
-
          echo -e \"******\" >{log.exec_time}
          echo -e \"start of filter_gencode_counts : $(date)\n\" >>{log.exec_time}
 
@@ -512,18 +512,17 @@ rule merge_tags:
     MERGED_DIFF_COUNTS
   log: 
     exec_time = LOGS + "/merge_tags_exec_time.log"
-  shell: """
+  run:
+    options = "-k {config[kmer_length]}"
 
-          echo -e \"******\" >{log.exec_time}
-          echo -e \"start of merge_tags : $(date)\n\" >>{log.exec_time}
+    if LIB_TYPE == "unstranded":
+      options += " -n"
 
-          {MERGE_TAGS} -k {config[kmer_length]} {input.counts} | gzip -c > {output}
-
-          echo -e \"\nend of merge_tags : $(date)\n\" >>{log.exec_time} 
-          echo -e \"******\" >>{log.exec_time}
-
-
-         """
+    shell("echo -e \"******\" >{log.exec_time}")
+    shell("echo -e \"start of merge_tags : $(date)\n\" >>{log.exec_time}")
+    shell("{MERGE_TAGS} " + options + " {input.counts} | gzip -c > {output}")
+    shell("echo -e \"\nend of merge_tags : $(date)\n\" >>{log.exec_time}")
+    shell("echo -e \"******\" >>{log.exec_time}")
 
 ###############################################################################
 #

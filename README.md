@@ -2,7 +2,7 @@
 
 DE-kupl is a pipeline that finds differentially expressed k-mers between RNA-Seq datasets.
 
-Dekupl-run handles the first part of the [DE-kupl pipeline]('https://github.com/Transipedia/dekupl') from raw FASTQ to
+Dekupl-run handles the first part of the [DE-kupl pipeline](https://github.com/Transipedia/dekupl) from raw FASTQ to
 the production of contigs from differentially expressed k-mers.
 
 ## Dependencies
@@ -28,6 +28,9 @@ Before using Dekupl-run, install these dependencies:
 1. Clone this repository including submodules : `git clone --recursive git@github.com:Transipedia/dekupl-run.git`
 2. Edit the config.json file to add the list of your samples, their conditions and the location their FASTQ file. See next section for parameters description.
 3. Run the pipeline with then `snakemake -jNB_THREADS -p` command. Replace `NB_THREADS` with the number of threads.
+4. Once Dekupl-run has been fully executed, DE contigs produced by Dekupl-run
+   (under `DEkupl_results/A_vs_B_kmer_counts/merged-diff-counts.tsv.gz`)
+   can be annotate using [Dekupl-annotation](https://github.com/Transipedia/dekupl-annotation)
 
 ## Configuration (config.json)
 

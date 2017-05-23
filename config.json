@@ -15,8 +15,8 @@
       "A": "A",
       "B": "B"
     },
-    "pvalue_threshold": 1,
-    "log2fc_threshold": 0
+    "pvalue_threshold": 0.05,
+    "log2fc_threshold": 2
   },
 
   "samples": [{

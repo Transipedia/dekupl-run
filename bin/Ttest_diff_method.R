@@ -1,25 +1,27 @@
-Ttest=snakemake@input$Ttest_filter
-no_GENCODE=snakemake@input$counts
+Ttest                     = snakemake@input$binary
+no_GENCODE                = snakemake@input$counts
 normalization_factor_path = snakemake@input$sample_conditions
-pvalue_threshold=snakemake@config$Ttest$pvalue_threshold
-log2fc_threshold=snakemake@config$Ttest$log2fc_threshold
+pvalue_threshold          = snakemake@params$pvalue_threshold
+log2fc_threshold          = snakemake@params$log2fc_threshold
+conditionA                = snakemake@params$conditionA
+conditionB                = snakemake@params$conditionB
 
-output_diff_counts=snakemake@output$diff_counts
-output_pvalue_all=snakemake@output$pvalue_all
+output_diff_counts  = snakemake@output$diff_counts
+output_pvalue_all   = snakemake@output$pvalue_all
+output_tmp          = snakemake@output$tmp_dir
+output_log          = snakemake@log[[1]]
 
-output_log=snakemake@log[[1]]
+# Function for logging to the output
+logging <- function(str) {
+  sink(file=paste(output_log), append=TRUE, split=TRUE)
+  print(paste(Sys.time(),str))
+  sink()
+}
 
-## GET THE PATH OF KMER_DE_DIR IN ORDER TO OUTPUT THE raw_pvals.txt FILE DIRECTLY IN IT
-working_dir=strsplit(output_pvalue_all,"raw_pvals.txt")[[1]]
+dir.create(output_tmp, showWarnings = FALSE)
 
-setwd(working_dir)
+logging(paste("Start Ttest_diff_methods"))
 
-sink(file=paste(output_log), append=TRUE, split=TRUE)
-print(paste(Sys.time(),"Start Ttest_diff_methods"))
-sink()
+system(paste(Ttest ,"-p", pvalue_threshold, "-f", log2fc_threshold, "-r", output_pvalue_all, no_GENCODE, normalization_factor_path, conditionA, conditionB, "| gzip -c > ",output_diff_counts))
 
-system(paste(Ttest," -p ",pvalue_threshold, " -f ",log2fc_threshold," ",no_GENCODE," ",normalization_factor_path," A B | gzip -c > ",output_diff_counts,sep=""))
-
-sink(file=paste(output_log), append=TRUE, split=TRUE)
-print(paste(Sys.time(),"End Ttest_diff_methods"))
-sink()
+logging(paste("End Ttest_diff_methods"))

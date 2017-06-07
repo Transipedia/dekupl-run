@@ -12,16 +12,15 @@ Before using Dekupl-run, install these dependencies:
 - Snakemake
 - jellyfish
 - pigz
-- [gsnap](http://research-pub.gene.com/gmap/)
 - CMake
 - R: 
   * DESEq2 : open R and execute :
     `> source("https://bioconductor.org/biocLite.R")`
     `> biocLite("DESeq2")`
+  * RColorBrewer
+  * pheatmap
 - Python: 
   * rpy2 : `pip3 install rpy2`
-- Perl: 
-  * CracTools::Utils : `cpanm install CracTools::Utils`
 
 ## Installation and usage
 
@@ -39,8 +38,11 @@ Before using Dekupl-run, install these dependencies:
   snakemake command-line
 - **kmer_length**: Length of k-mers (default: 31). This value shoud not exceed
   32.
+- **diff_method**: Method used for differential testing (default: DESeq2). Possible choices are 'Ttest' which is fast and 'DESeq2' which is more sensitive but longer to run.
 - **lib_type**: Paired-end library type (default: `rf`). You can specify either `rf` for reverse-forward strand-specific libraries, `fr` for strand-specific forward-reverse, or `unstranded` for unstranded libraries.
 - **output_dir**: Location of DE-kupl results (default: `DEkupl_result`).
+- **tmp_dir**: Temporary directory to use (default: `./` aka current directory)
+- **r1_suffix**: Suffix to use for the FASTQ with left mate. Set `r2_suffix` for the second FASTQ.
 - **dekupl_counter**:
   * *min_reccurence*: Minimum number of samples to support a k-mer
   * *min_recurrence_abundance*: Min abundance threshold to consider a k-mer in
@@ -55,8 +57,40 @@ Before using Dekupl-run, install these dependencies:
   command
     `fastq_dir/sample_name_{1,2}.fastq.gz`
 
+## Output files
+
+The output directory of a DE-kupl will have the following content :
+
+```
+├── {A}_vs_{B}_kmer_counts
+│   ├── diff-counts.tsv.gz
+│   ├── merged-diff-counts.tsv.gz
+├── gene_expression
+│   ├── {A}vs{B}-DEGs.tsv
+├── kmer_counts
+│   ├── normalization_factors.tsv
+│   ├── raw-counts.tsv.gz
+│   ├── noGENCODE-counts.tsv.gz
+│   ├── {sample}.jf
+│   ├── {sample}.txt.gz
+│   ├── ...
+├── metadata
+│   ├── sample_conditions.tsv
+│   ├── sample_conditions_full.tsv
+```
+
+The following table describes the output files produced by DE-kupl :
+
+FileName | Description
+---------|------------
+`diff-counts.tsv.gz` | Contains k-mers counts from `noGENCODE-counts.tsv.gz` that have passed the differential testing. Output format is a tsv with the following columns: `kmer pvalue meanA meanB log2FC [SAMPLES]`.
+`merged-diff-counts.tsv.gz` | Contains assembled k-mers from `diff-counts.tsv.gz`. Output format is a tsv with the following columns: `nb_merged_kmers contig kmer pvalue meanA meanB log2FC [SAMPLES]`.
+`raw-counts.tsv.gz` | Containins raw k-mer counts of all libraries that have been filtered with the reccurency filters.
+`noGENCODE-counts.tsv.gz` | Containtains k-mer counts filtered from `raw-counts.tsv` with the k-mers from the reference transcription (ex: GENCODE by default).
+`sample_conditions_full.tsv` | Tabulated file with samples names, conditions and normalization factors. `sample_conditions.tsv` is the sample
+
 ## FAQ
-- if new samples are added to the config.json, make sure to remove the `sample_conditions.tsv` file in order to force SnakeMake to re-make all targets that depends on this file
+- if new samples are added to the config.json, make sure to remove the `metadata` folder in order to force SnakeMake to re-make all targets that depends on this file
 
 ## TODO
 

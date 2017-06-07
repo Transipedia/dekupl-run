@@ -2,8 +2,12 @@
   "fastq_dir": "data",
   "nb_threads": 8,
   "kmer_length": 31,
-  "lib_type": "rf", 
+  "lib_type": "rf",
   "output_dir":"DEkupl_result",
+  "diff_method": "DESeq2",
+  "chunk_size":1000000,
+  "r1_suffix": "_1.fastq.gz",
+  "r2_suffix": "_2.fastq.gz",
 
   "dekupl_counter": {
     "min_recurrence": 2,
@@ -24,13 +28,13 @@
       "condition": "A"
     }, {
       "name" : "sample2",
-      "condition" : "A" 
+      "condition" : "A"
     }, {
       "name" : "sample3",
-      "condition" : "B" 
+      "condition" : "B"
     }, {
       "name" : "sample4",
-      "condition" : "B" 
+      "condition" : "B"
     }
   ]
 }

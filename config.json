@@ -15,7 +15,7 @@
     "min_recurrence_abundance": 5
   },
 
-  "Ttest": {
+  "diff_analysis": {
     "condition" : {
       "A": "A",
       "B": "B"

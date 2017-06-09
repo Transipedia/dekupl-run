@@ -12,20 +12,19 @@ SAMPLE_NAMES    = [i['name'] for i in config["samples"]]
 CONDITION_COL   = "condition"
 CONDITION_A     = config['diff_analysis']['condition']['A']
 CONDITION_B     = config['diff_analysis']['condition']['B']
-LIB_TYPE        = "rf"
+PVALUE_MAX      = config['diff_analysis']['pvalue_threshold']
+LOG2FC_MIN      = config['diff_analysis']['log2fc_threshold']
+LIB_TYPE        = config['lib_type']    if 'lib_type'   in config else "rf"
+R1_SUFFIX       = config['r1_suffix']   if 'r1_suffix'  in config else "_1.fastq.gz"
+R2_SUFFIX       = config['r2_suffix']   if 'r2_suffix'  in config else "_2.fastq.gz"
+CHUNK_SIZE      = config['chunk_size']  if 'chunk_size' in config else 1000000
+TMP_DIR         = config['tmp_dir']     if 'tmp_dir'    in config else os.getcwd()
 MAX_CPU         = 1000
-MAX_RAM         = 10
-R1_SUFFIX       = config['r1_suffix']
-R2_SUFFIX       = config['r2_suffix']
-CHUNK_SIZE      = config['chunk_size']
-
-if 'lib_type' in config:
-  LIB_TYPE = config['lib_type']
 
 # DIRECTORIES
 OUTPUT_DIR	= config['output_dir']
 BIN_DIR         = "bin"
-TMP_DIR         = OUTPUT_DIR + "/dekupl_tmp"
+TMP_DIR         = temp(TMP_DIR + "/dekupl_tmp")
 FASTQ_DIR       = config['fastq_dir']
 GENE_EXP_DIR    = OUTPUT_DIR + "/gene_expression"
 KALLISTO_DIR    = GENE_EXP_DIR + "/kallisto"
@@ -38,7 +37,9 @@ LOGS            = OUTPUT_DIR + "/Logs"
 # FILES
 RAW_COUNTS                  = COUNTS_DIR    + "/raw-counts.tsv.gz"
 NO_GENCODE_COUNTS           = COUNTS_DIR    + "/noGENCODE-counts.tsv.gz"
+NORMALIZATION_FACTORS       = COUNTS_DIR  + "/normalization_factors.tsv"
 DIFF_COUNTS                 = KMER_DE_DIR   + "/diff-counts.tsv.gz"
+PVALUE_ALL                  = KMER_DE_DIR   + "/raw_pvals.txt.gz"
 MERGED_DIFF_COUNTS          = KMER_DE_DIR   + "/merged-diff-counts.tsv.gz"
 ASSEMBLIES_FASTA            = KMER_DE_DIR   + "/merged-diff-counts.fa.gz"
 ASSEMBLIES_BAM              = KMER_DE_DIR   + "/merged-diff-counts.bam"
@@ -54,7 +55,6 @@ KALLISTO_INDEX              = REFERENCE_DIR + "/gencode.v24.transcripts-kallisto
 TRANSCRIPT_COUNTS           = KALLISTO_DIR  + "/transcript_counts.tsv.gz"
 GENE_COUNTS                 = KALLISTO_DIR  + "/gene_counts.tsv.gz"
 DEGS                        = GENE_EXP_DIR  + "/" + CONDITION_A + "vs" + CONDITION_B + "-DEGs.tsv"
-NORMALIZATION_FACTORS       = GENE_EXP_DIR  + "/normalization_factors.tsv"
 CHECKING_PLOTS              = KMER_DE_DIR   + "/checking_plots.pdf"
 DIST_MATRIX                 = GENE_EXP_DIR  + "/clustering_of_samples.pdf"
 NORMALIZED_COUNTS	    = GENE_EXP_DIR  + "/normalized_counts.tsv"
@@ -78,14 +78,19 @@ ZCAT            = "gunzip -c"
 SORT            = "sort"
 
 # GET THE METHOD USED FOR DETECT DE KMERS
-if(config['diff_method'] == "DESeq2"):
-  TEST_DIFF_SCRIPT   = BIN_DIR + "/DESeq2_diff_method.R"
-
+if config['diff_method'] == "DESeq2":
+    TEST_DIFF_SCRIPT   = BIN_DIR + "/DESeq2_diff_method.R"
+elif config['diff_method'] == "Ttest":
+    TEST_DIFF_SCRIPT   = BIN_DIR + "/Ttest_diff_method.R"
 else:
-  TEST_DIFF_SCRIPT   = BIN_DIR + "/Ttest_diff_method.R"
+    sys.exit("Invalid value for 'diff_method', possible choices are: 'DESeq2' and 'Ttest'")
+
+# VERIFY LIB_TYPE VALUE
+if LIB_TYPE not in ['rf', 'fr', 'unstranded']:
+    sys.exit("Invalid value for 'lib_type', possible choices are: 'rf', 'rf' and 'unstranded'")
 
 rule all:
-  input: MERGED_DIFF_COUNTS
+  input: MERGED_DIFF_COUNTS, DEGS
 
 ###############################################################################
 #
@@ -162,7 +167,6 @@ rule gsnap_index:
 #   3. A tabulated file with the sample names, condition and normalization factors
 
 rule sample_conditions:
-  input: KALLISTO_INDEX
   output: SAMPLE_CONDITIONS
   run:
     with open(output[0], "w") as f:
@@ -172,9 +176,10 @@ rule sample_conditions:
 
 rule compute_normalization_factors:
   input:
-    gene_counts = RAW_COUNTS
-  output:
-    NORMALIZATION_FACTORS
+    raw_counts = RAW_COUNTS
+  output: 
+    nf      = NORMALIZATION_FACTORS,
+    tmp_dir = temp(TMP_DIR + "/NF")
   log: LOGS + "/compute_norm_factors.log"
   script: COMPUTE_NF
 
@@ -278,7 +283,7 @@ rule differential_gene_expression:
   output:
     differentially_expressed_genes  = DEGS,
     dist_matrix			            = DIST_MATRIX,
-    norm_counts		                = NORMALIZED_COUNTS,
+    norm_counts		                    = NORMALIZED_COUNTS,
     pca_design			            = PCA_DESIGN
   log : LOGS + "/DESeq2_diff_gene_exp.log"
   run:
@@ -340,7 +345,7 @@ rule differential_gene_expression:
 	col=colours,
 	fontsize = 14)
 
-    data<-plotPCA(rld,ntop=nrow(rld),returnData=TRUE)
+    data <- plotPCA(rld,ntop=nrow(rld),returnData=TRUE)
     write.table(data,"{output.pca_design}",row.names=F, col.names=T, quote=F,sep="\t")
 
     print(ggplot(data,aes(PC1,PC2,color=condition))+geom_point()+geom_text(aes(label=name),hjust=0,vjust=0))
@@ -497,7 +502,18 @@ rule test_diff_counts:
     counts = NO_GENCODE_COUNTS,
     sample_conditions = SAMPLE_CONDITIONS_FULL,
     binary = TTEST_FILTER
-  output: DIFF_COUNTS
+  output:
+    diff_counts = DIFF_COUNTS,
+    pvalue_all  = PVALUE_ALL,
+    tmp_dir     = TMP_DIR + "/test_diff"
+    #tmp_dir     = temp(TMP_DIR + "/test_diff")
+  params:
+    conditionA  = CONDITION_A,
+    conditionB  = CONDITION_B,
+    pvalue_threshold = PVALUE_MAX,
+    log2fc_threshold = LOG2FC_MIN,
+    chunk_size = CHUNK_SIZE,
+  threads: MAX_CPU
   log: LOGS + "/test_diff_counts.logs"
   script: TEST_DIFF_SCRIPT
 

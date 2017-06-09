@@ -3,13 +3,22 @@
 use strict;
 use warnings;
 
-use CracTools::Utils;
+sub getReadingFileHandle {
+  my $file = shift;
+  my $fh;
+  if($file =~ /\.gz$/) {
+    open($fh,"gunzip -c $file |") or die ("Cannot open $file");
+  } else {
+    open($fh,"< $file") or die ("Cannot open $file");
+  }
+  return $fh;
+}
 
 my $diff_table = shift;
 my $counts_table = shift;
 
-my $diff_fh = CracTools::Utils::getReadingFileHandle($diff_table);
-my $counts_fh = CracTools::Utils::getReadingFileHandle($counts_table);
+my $diff_fh   = getReadingFileHandle($diff_table);
+my $counts_fh = getReadingFileHandle($counts_table);
 
 # Init diff tag
 my $diff_line = <$diff_fh>;

@@ -14,18 +14,22 @@ CONDITION_A     = config['diff_analysis']['condition']['A']
 CONDITION_B     = config['diff_analysis']['condition']['B']
 PVALUE_MAX      = config['diff_analysis']['pvalue_threshold']
 LOG2FC_MIN      = config['diff_analysis']['log2fc_threshold']
-LIB_TYPE        = config['lib_type']    if 'lib_type'   in config else "rf"
-R1_SUFFIX       = config['r1_suffix']   if 'r1_suffix'  in config else "_1.fastq.gz"
-R2_SUFFIX       = config['r2_suffix']   if 'r2_suffix'  in config else "_2.fastq.gz"
-CHUNK_SIZE      = config['chunk_size']  if 'chunk_size' in config else 1000000
-TMP_DIR         = config['tmp_dir']     if 'tmp_dir'    in config else os.getcwd()
+MIN_REC         = config['dekupl_counter']['min_recurrence']
+MIN_REC_AB      = config['min_recurrence']['min_recurrence_abundance']
+LIB_TYPE        = config['lib_type']    if 'lib_type'     in config else "rf"
+R1_SUFFIX       = config['r1_suffix']   if 'r1_suffix'    in config else "_1.fastq.gz"
+R2_SUFFIX       = config['r2_suffix']   if 'r2_suffix'    in config else "_2.fastq.gz"
+CHUNK_SIZE      = config['chunk_size']  if 'chunk_size'   in config else 1000000
+TMP_DIR         = config['tmp_dir']     if 'tmp_dir'      in config else os.getcwd()
+KMER_LENGTH     = config['kmer_length'] if 'kmer_length'  in config else 31
+DIFF_METHOD     = config['diff_method'] if 'diff_method'  in config else 'DESeq2'
+OUTPUT_DIR	    = config['output_dir']
+FASTQ_DIR       = config['fastq_dir']
 MAX_CPU         = 1000
 
 # DIRECTORIES
-OUTPUT_DIR	= config['output_dir']
 BIN_DIR         = "bin"
 TMP_DIR         = temp(TMP_DIR + "/dekupl_tmp")
-FASTQ_DIR       = config['fastq_dir']
 GENE_EXP_DIR    = OUTPUT_DIR + "/gene_expression"
 KALLISTO_DIR    = GENE_EXP_DIR + "/kallisto"
 COUNTS_DIR      = OUTPUT_DIR + "/kmer_counts"
@@ -78,9 +82,9 @@ ZCAT            = "gunzip -c"
 SORT            = "sort"
 
 # GET THE METHOD USED FOR DETECT DE KMERS
-if config['diff_method'] == "DESeq2":
+if DIFF_METHOD == "DESeq2":
     TEST_DIFF_SCRIPT   = BIN_DIR + "/DESeq2_diff_method.R"
-elif config['diff_method'] == "Ttest":
+elif DIFF_METHOD == "Ttest":
     TEST_DIFF_SCRIPT   = BIN_DIR + "/Ttest_diff_method.R"
 else:
     sys.exit("Invalid value for 'diff_method', possible choices are: 'DESeq2' and 'Ttest'")
@@ -369,7 +373,7 @@ rule jellyfish_count:
     exec_time = LOGS + "/{sample}_jellyfishRawCounts_exec_time.log"
   threads: 10
   run:
-    options = "-L 2 -m {config[kmer_length]} -s 10000 -t {threads} -o {output} -F 2"
+    options = "-L 2 -m {KMER_LENGTH} -s 10000 -t {threads} -o {output} -F 2"
 
     shell("echo -e \"******\" >{log.exec_time}")
     shell("echo -e \"start of rule jellyfish_count (raw counts) : $(date)\n\" >>{log.exec_time}")
@@ -424,8 +428,7 @@ rule join_counts:
            echo -e \"******\" >{log.exec_time}
            echo -e \"start of rule join_counts : $(date)\n\" >>{log.exec_time}
 
-           {JOIN_COUNTS} -r {config[dekupl_counter][min_recurrence]} \
-          -a {config[dekupl_counter][min_recurrence_abundance]} \
+           {JOIN_COUNTS} -r {MIN_REC} -a {MIN_REC_AB} \
           {input.fastq_files} | gzip -c >> {output}
 
           echo -e \"\nend of rule dekupl_counter : $(date)\n\" >>{log.exec_time}
@@ -446,7 +449,7 @@ rule gencode_count:
   output: temp(GENCODE_FASTA + ".jf")
   threads: MAX_CPU
   run:
-    options = "-m {config[kmer_length]} -s 10000 -t {threads} -o {output}"
+    options = "-m {KMER_LENGTH} -s 10000 -t {threads} -o {output}"
     if LIB_TYPE == "unstranded":
       options += " -C"
     shell("{JELLYFISH_COUNT} " + options + " <({ZCAT} {input})")
@@ -526,7 +529,7 @@ rule merge_tags:
   log:
     exec_time = LOGS + "/merge_tags_exec_time.log"
   run:
-    options = "-k {config[kmer_length]}"
+    options = "-k {KMER_LENGTH}"
 
     if LIB_TYPE == "unstranded":
       options += " -n"

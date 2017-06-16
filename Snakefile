@@ -202,7 +202,7 @@ rule sample_conditions_full:
 #         the samples
 
 # 1.3 Generic rule to quantify a sample with kallisto
-rule kallito_quantif:
+rule kallisto_quantif:
   input:
     r1 = FASTQ_DIR + "/{sample}" + R1_SUFFIX,
     r2 = FASTQ_DIR + "/{sample}" + R2_SUFFIX,
@@ -214,11 +214,11 @@ rule kallito_quantif:
   shell: """
 
          echo -e \"******\" >{log}
-         echo -e \"start of rule kallito_quantif : $(date)\n\" >>{log}
+         echo -e \"start of rule kallisto_quantif : $(date)\n\" >>{log}
 
          {KALLISTO} quant -i {input.index} -o {output} {input.r1} {input.r2} 2>>{log}
 
-         echo -e \"\nend of rule kallito_quantif : $(date)\n\" >>{log}
+         echo -e \"\nend of rule kallisto_quantif : $(date)\n\" >>{log}
          echo -e \"******\" >>{log}
 
          """

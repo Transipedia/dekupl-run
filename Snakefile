@@ -208,7 +208,10 @@ rule kallisto_quantif:
     r2 = FASTQ_DIR + "/{sample}" + R2_SUFFIX,
     index = KALLISTO_INDEX
   output:
-    KALLISTO_DIR + "/{sample}"
+    dir           = KALLISTO_DIR + "/{sample}",
+    abundance_h5  = KALLISTO_DIR + "/{sample}/abundance.h5",
+    abundance_tsv = KALLISTO_DIR + "/{sample}/abundance.tsv",
+    run_info      = KALLISTO_DIR + "/{sample}/run_info.json"
   log : LOGS + "/{sample}_kallisto.log"
   threads: 1
   shell: """
@@ -216,7 +219,7 @@ rule kallisto_quantif:
          echo -e \"******\" >{log}
          echo -e \"start of rule kallisto_quantif : $(date)\n\" >>{log}
 
-         {KALLISTO} quant -i {input.index} -o {output} {input.r1} {input.r2} 2>>{log}
+         {KALLISTO} quant -i {input.index} -o {output.dir} {input.r1} {input.r2} 2>> {log}
 
          echo -e \"\nend of rule kallisto_quantif : $(date)\n\" >>{log}
          echo -e \"******\" >>{log}

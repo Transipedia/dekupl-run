@@ -25,7 +25,6 @@ KMER_LENGTH     = config['kmer_length'] if 'kmer_length'  in config else 31
 DIFF_METHOD     = config['diff_method'] if 'diff_method'  in config else 'DESeq2'
 OUTPUT_DIR	    = config['output_dir']
 FASTQ_DIR       = config['fastq_dir']
-MAX_CPU         = 1000
 
 # DIRECTORIES
 BIN_DIR         = "bin"
@@ -80,6 +79,15 @@ JELLYFISH_DUMP  = JELLYFISH + " dump"
 PIGZ            = "pigz"
 ZCAT            = "gunzip -c"
 SORT            = "sort"
+
+# SET MEMORY/THREAD USAGE FOR EACH RULE
+MAX_MEM_KALLISTO  = 4000
+MAX_MEM_JELLYFISH = 8000
+MAX_MEM_SORT      = 3000
+
+MAX_CPU           = 1000 
+MAX_CPU_JELLYFISH = 10
+MAX_CPU_SORT      = 10
 
 # GET THE METHOD USED FOR DETECT DE KMERS
 if DIFF_METHOD == "DESeq2":
@@ -207,6 +215,7 @@ rule kallisto_quantif:
     r1 = FASTQ_DIR + "/{sample}" + R1_SUFFIX,
     r2 = FASTQ_DIR + "/{sample}" + R2_SUFFIX,
     index = KALLISTO_INDEX
+  resources: ram = MAX_MEM_KALLISTO
   output:
     dir           = KALLISTO_DIR + "/{sample}",
     abundance_h5  = KALLISTO_DIR + "/{sample}/abundance.h5",
@@ -374,7 +383,8 @@ rule jellyfish_count:
   output: COUNTS_DIR + "/{sample}.jf"
   log:
     exec_time = LOGS + "/{sample}_jellyfishRawCounts_exec_time.log"
-  threads: 10
+  threads: MAX_CPU_JELLYFISH
+  resources: ram = MAX_MEM_SORT
   run:
     options = "-L 2 -m {KMER_LENGTH} -s 10000 -t {threads} -o {output} -F 2"
 
@@ -399,8 +409,8 @@ rule jellyfish_count:
 rule jellyfish_dump:
   input: COUNTS_DIR + "/{sample}.jf"
   output: COUNTS_DIR + "/{sample}.txt.gz"
-  threads: 10
-  resources: ram=3
+  threads: MAX_CPU_SORT
+  resources: ram = MAX_MEM_SORT
   log :
     exec_time = LOGS + "/{sample}_jellyfishDumpRawCounts_exec_time.log"
   shell: """
@@ -450,7 +460,8 @@ rule join_counts:
 rule gencode_count:
   input: GENCODE_FASTA
   output: temp(GENCODE_FASTA + ".jf")
-  threads: MAX_CPU
+  threads: MAX_CPU_JELLYFISH
+  resources: ram = MAX_MEM_JELLYFISH
   run:
     options = "-m {KMER_LENGTH} -s 10000 -t {threads} -o {output}"
     if LIB_TYPE == "unstranded":
@@ -462,8 +473,8 @@ rule gencode_dump:
   output: GENCODE_COUNTS
   log :
     exec_time = LOGS + "/jellyfishDumpGencodeCounts_exec_time.log"
-  threads: 10
-  resources: ram=4
+  threads: MAX_CPU_SORT
+  resources: ram = MAX_MEM_SORT
   shell: """
 
          echo -e \"******\" >{log.exec_time}

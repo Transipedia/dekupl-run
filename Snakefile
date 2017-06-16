@@ -161,6 +161,7 @@ rule kallisto_index:
   input:
     transcripts   = GENCODE_FASTA,
     kallisto_bin  = KALLISTO
+  resources: ram = MAX_MEM_KALLISTO
   output:
     KALLISTO_INDEX
   shell: "{KALLISTO} index -i {output} {input.transcripts}"

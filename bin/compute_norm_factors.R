@@ -24,7 +24,7 @@ logging("Start normalization factors computation")
 ## SELECT 33% OF THE TOTAL NUMBER OF K-MERS FOR THE SAMPLING
 system(paste("zcat", data ," | awk '{if(NR % 3 ==0 || NR ==1){print $0}}' |gzip -c >", selected_kmers))
 
-selected_kmers_counts <- data.frame(fread(paste("zcat",selected_kmers)))
+selected_kmers_counts <- read.table(selected_kmers, header=T, stringsAsFactor=F)
 
 logging(paste("Number of kmers :",nrow(selected_kmers_counts)-1))
 

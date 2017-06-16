@@ -126,7 +126,7 @@ colData = read.table(sample_conditions,header=T,row.names=1)
 
 ## DESeq2 ANALYSIS ON EACH CHUNKS
 invisible(foreach(i=1:length(lst_files)) %dopar% {
-            bigTab=data.frame(fread(paste("zcat",lst_files[i]),header=FALSE))
+            bigTab = read.table(lst_files[i],header=F,stringsAsFactors=F)
             #SET TAGS AS ROWNAMES
             rownames(bigTab)=bigTab[,1]
             #REMOVE THE TAG AS A COLUMN
@@ -213,7 +213,7 @@ system(paste("rm -rf", output_tmp_DESeq2))
 system(paste("zcat", dataDESeq2All, "| head -1 | cut -f2- >", header_dataDESeq2All))
 
 #CREATE AND WRITE THE ADJUSTED PVALUE UNDER THRESHOLD WITH THEIR ID
-pvalueAll         = data.frame(fread(paste("zcat",output_pvalue_all),header=FALSE))
+pvalueAll         = read.table(output_pvalue_all, header=F, stringsAsFactors=F)
 names(pvalueAll)  = c("ID","pvalue")
 adjPvalue         = p.adjust(as.numeric(as.character(pvalueAll[,"pvalue"])),"BH")
 

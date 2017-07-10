@@ -24,7 +24,7 @@ Before using Dekupl-run, install these dependencies:
 
 ## Installation and usage
 
-1. Clone this repository including submodules : `git clone --recursive git@github.com:Transipedia/dekupl-run.git`
+1. Clone this repository including submodules : `git clone --recursive https://github.com/Transipedia/dekupl-run.git`
 2. Edit the config.json file to add the list of your samples, their conditions and the location their FASTQ file. See next section for parameters description.
 3. Run the pipeline with then `snakemake -jNB_THREADS --resources ram=MAX_MEMORY -p` command. Replace `NB_THREADS` with the number of threads and `MAX_MEMORY` with the maximum memory (in Megabyte) you want DEkupl to allocate.
 4. Once Dekupl-run has been fully executed, DE contigs produced by Dekupl-run
@@ -44,7 +44,7 @@ Before using Dekupl-run, install these dependencies:
 - **tmp_dir**: Temporary directory to use (default: `./` aka current directory)
 - **r1_suffix**: Suffix to use for the FASTQ with left mate. Set `r2_suffix` for the second FASTQ.
 - **dekupl_counter**:
-  * *min_reccurence*: Minimum number of samples to support a k-mer
+  * *min_recurrence*: Minimum number of samples to support a k-mer
   * *min_recurrence_abundance*: Min abundance threshold to consider a k-mer in
     the reccurency filter.
 - **Ttest**:

@@ -1,9 +1,9 @@
 [submodule "share/joinCounts"]
 	path = share/joinCounts
-	url = git@github.com:Transipedia/dekupl-joinCounts.git
+	url = https://github.com/Transipedia/dekupl-joinCounts.git
 [submodule "share/TtestFilter"]
 	path = share/TtestFilter
-	url = git@github.com:Transipedia/dekupl-TtestFilter.git
+	url = https://github.com/Transipedia/dekupl-TtestFilter.git
 [submodule "share/mergeTags"]
 	path = share/mergeTags
-	url = git@github.com:Transipedia/dekupl-mergeTags.git
+	url = https://github.com/Transipedia/dekupl-mergeTags.git

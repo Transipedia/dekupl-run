@@ -21,6 +21,7 @@ Before using Dekupl-run, install these dependencies:
   * pheatmap
 - Python: 
   * rpy2 : `pip3 install rpy2`
+- CracTools: `cpanm CracTools::Utils`
 
 ## Installation and usage
 

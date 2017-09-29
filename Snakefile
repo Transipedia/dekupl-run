@@ -39,7 +39,7 @@ LOGS            = OUTPUT_DIR + "/Logs"
 
 # FILES
 RAW_COUNTS                  = COUNTS_DIR    + "/raw-counts.tsv.gz"
-NO_GENCODE_COUNTS           = COUNTS_DIR    + "/noGENCODE-counts.tsv.gz"
+NO_GENCODE_COUNTS           = COUNTS_DIR    + "/masked-counts.tsv.gz"
 NORMALIZATION_FACTORS       = COUNTS_DIR  + "/normalization_factors.tsv"
 DIFF_COUNTS                 = KMER_DE_DIR   + "/diff-counts.tsv.gz"
 PVALUE_ALL                  = KMER_DE_DIR   + "/raw_pvals.txt.gz"

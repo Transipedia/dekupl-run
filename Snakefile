@@ -5,6 +5,14 @@ from snakemake.utils import R
 
 __author__ = "Jérôme Audoux (jerome.audoux@inserm.fr)"
 
+
+def getbasename(fileName):
+    fileName = os.path.basename(fileName)
+    *name, extension, compression = fileName.split(os.path.extsep)
+    baseName = '.'.join(name)
+    return(baseName)
+
+
 configfile: "config.json"
 
 # COMMON VARIABLES
@@ -23,7 +31,7 @@ CHUNK_SIZE      = config['chunk_size']  if 'chunk_size'   in config else 1000000
 TMP_DIR         = config['tmp_dir']     if 'tmp_dir'      in config else os.getcwd()
 KMER_LENGTH     = config['kmer_length'] if 'kmer_length'  in config else 31
 DIFF_METHOD     = config['diff_method'] if 'diff_method'  in config else 'DESeq2'
-OUTPUT_DIR	    = config['output_dir']
+OUTPUT_DIR      = config['output_dir']
 FASTQ_DIR       = config['fastq_dir']
 
 # DIRECTORIES
@@ -39,7 +47,7 @@ LOGS            = OUTPUT_DIR + "/Logs"
 
 # FILES
 RAW_COUNTS                  = COUNTS_DIR    + "/raw-counts.tsv.gz"
-NO_GENCODE_COUNTS           = COUNTS_DIR    + "/masked-counts.tsv.gz"
+MASKED_COUNTS               = COUNTS_DIR    + "/masked-counts.tsv.gz"
 NORMALIZATION_FACTORS       = COUNTS_DIR  + "/normalization_factors.tsv"
 DIFF_COUNTS                 = KMER_DE_DIR   + "/diff-counts.tsv.gz"
 PVALUE_ALL                  = KMER_DE_DIR   + "/raw_pvals.txt.gz"
@@ -48,19 +56,17 @@ ASSEMBLIES_FASTA            = KMER_DE_DIR   + "/merged-diff-counts.fa.gz"
 ASSEMBLIES_BAM              = KMER_DE_DIR   + "/merged-diff-counts.bam"
 SAMPLE_CONDITIONS           = METADATA_DIR  + "/sample_conditions.tsv"
 SAMPLE_CONDITIONS_FULL      = METADATA_DIR  + "/sample_conditions_full.tsv"
-GENOME_FASTA                = REFERENCE_DIR + "/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz"
-GSNAP_INDEX_DIR             = REFERENCE_DIR + "/GSNAP"
-GSNAP_INDEX_NAME            = "Homo_sapiens.GRCh38.dna.primary_assembly"
-GENCODE_FASTA               = REFERENCE_DIR + "/gencode.v24.transcripts.fa.gz"
-GENCODE_COUNTS              = REFERENCE_DIR + "/gencode.v24.transcripts.tsv.gz"
+default_file                = "".join(REFERENCE_DIR + "/gencode.v24.transcripts.fa.gz")
+REF_TRANSCRIPT_FASTA        = config['transcript_fasta'] if 'transcript_fasta' in config else default_file
+REF_TRANSCRIPT_COUNTS       = REFERENCE_DIR + "/" + getbasename(REF_TRANSCRIPT_FASTA) + ".tsv.gz"
 TRANSCRIPT_TO_GENE_MAPPING  = REFERENCE_DIR + "/transcript_to_gene_mapping.tsv"
-KALLISTO_INDEX              = REFERENCE_DIR + "/gencode.v24.transcripts-kallisto.idx"
+KALLISTO_INDEX              = REFERENCE_DIR + "/" + getbasename(REF_TRANSCRIPT_FASTA) + "-kallisto.idx"
 TRANSCRIPT_COUNTS           = KALLISTO_DIR  + "/transcript_counts.tsv.gz"
 GENE_COUNTS                 = KALLISTO_DIR  + "/gene_counts.tsv.gz"
 DEGS                        = GENE_EXP_DIR  + "/" + CONDITION_A + "vs" + CONDITION_B + "-DEGs.tsv"
 CHECKING_PLOTS              = KMER_DE_DIR   + "/checking_plots.pdf"
 DIST_MATRIX                 = GENE_EXP_DIR  + "/clustering_of_samples.pdf"
-NORMALIZED_COUNTS	    = GENE_EXP_DIR  + "/normalized_counts.tsv"
+NORMALIZED_COUNTS           = GENE_EXP_DIR  + "/normalized_counts.tsv"
 PCA_DESIGN                  = GENE_EXP_DIR  + "/pca_design.tsv"
 
 # binaries
@@ -104,6 +110,7 @@ if LIB_TYPE not in ['rf', 'fr', 'unstranded']:
 rule all:
   input: MERGED_DIFF_COUNTS, DEGS
 
+
 ###############################################################################
 #
 # SOFTWARE INSTALLATION
@@ -137,20 +144,16 @@ rule download_kallisto:
     shell("tar -xzf {output.kallisto_tarball} -C share")
     shell("ln -s ../share/kallisto_linux-v0.43.0/kallisto bin/kallisto")
 
+
 ###############################################################################
 #
 # DOWNLOAD REFERENCE FILES
 #
 # Download the gencode transcripts in fasta format
 rule gencode_download:
-  output: GENCODE_FASTA
+  output: REF_TRANSCRIPT_FASTA
   shell: "wget ftp://ftp.sanger.ac.uk/pub/gencode/Gencode_human/release_24/gencode.v24.transcripts.fa.gz -O {output}"
 
-# Download the genome from Ensembl
-rule genome_download:
-  output: GENOME_FASTA
-  shell: "wget ftp://ftp.ensembl.org/pub/release-86/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz -O {output}"
-  #shell: "wget ftp://ftp.ensembl.org/pub/release-86/fasta/ciona_intestinalis/dna/Ciona_intestinalis.KH.dna.chromosome.10.fa.gz -O {output}"
 
 ###############################################################################
 #
@@ -159,17 +162,13 @@ rule genome_download:
 # Create a Kallisto index of the reference transrciptome
 rule kallisto_index:
   input:
-    transcripts   = GENCODE_FASTA,
+    transcripts   = REF_TRANSCRIPT_FASTA,
     kallisto_bin  = KALLISTO
   resources: ram = MAX_MEM_KALLISTO
   output:
     KALLISTO_INDEX
   shell: "{KALLISTO} index -i {output} {input.transcripts}"
 
-rule gsnap_index:
-  input: GENOME_FASTA
-  output: GSNAP_INDEX_DIR + "/" + GSNAP_INDEX_NAME
-  shell: "gmap_build -D {GSNAP_INDEX_DIR} -d {GSNAP_INDEX_NAME} --gunzip {input}"
 
 ###############################################################################
 #
@@ -203,6 +202,7 @@ rule sample_conditions_full:
     sample_conditions     = SAMPLE_CONDITIONS,
     normalization_factors  = NORMALIZATION_FACTORS
   shell: "join --header {input.sample_conditions} {input.normalization_factors} > {output}"
+
 
 ##############################################################################
 
@@ -248,7 +248,7 @@ rule transcript_counts:
 
 # 1.5 Create a conversion table from transcript id to gene ids
 rule transcript_to_gene_mapping:
-  input: GENCODE_FASTA
+  input: REF_TRANSCRIPT_FASTA
   output: TRANSCRIPT_TO_GENE_MAPPING
   run:
     mapping = open(output[0], 'w')
@@ -459,8 +459,8 @@ rule join_counts:
 
 # 3.2 Counts k-mer of all gencode transcript (for further filtration)
 rule gencode_count:
-  input: GENCODE_FASTA
-  output: temp(GENCODE_FASTA + ".jf")
+  input: REF_TRANSCRIPT_FASTA
+  output: temp(REF_TRANSCRIPT_FASTA + ".jf")
   threads: MAX_CPU_JELLYFISH
   resources: ram = MAX_MEM_JELLYFISH
   run:
@@ -470,8 +470,8 @@ rule gencode_count:
     shell("{JELLYFISH_COUNT} " + options + " <({ZCAT} {input})")
 
 rule gencode_dump:
-  input: GENCODE_FASTA + ".jf"
-  output: GENCODE_COUNTS
+  input: REF_TRANSCRIPT_FASTA + ".jf"
+  output: REF_TRANSCRIPT_COUNTS
   log :
     exec_time = LOGS + "/jellyfishDumpGencodeCounts_exec_time.log"
   threads: MAX_CPU_SORT
@@ -490,21 +490,21 @@ rule gencode_dump:
         """
 
 # 3.3 Filter counter k-mer that are present in the gencode set
-rule filter_gencode_counts:
+rule filter_transcript_counts:
   input:
     counts = RAW_COUNTS,
-    gencode_counts = GENCODE_COUNTS
-  output: NO_GENCODE_COUNTS
+    ref_transcript_counts = REF_TRANSCRIPT_COUNTS
+  output: MASKED_COUNTS
   log:
-    exec_time = LOGS + "/filter_gencode_counts_exec_time.log"
+    exec_time = LOGS + "/filter_transcript_counts_exec_time.log"
   shell: """
          echo -e \"******\" >{log.exec_time}
-         echo -e \"start of filter_gencode_counts : $(date)\n\" >>{log.exec_time}
+         echo -e \"start of filter_transcript_counts : $(date)\n\" >>{log.exec_time}
 
-         {DIFF_FILTER} {input.gencode_counts} {input.counts} | gzip -c > {output}
+         {DIFF_FILTER} {input.ref_transcript_counts} {input.counts} | gzip -c > {output}
 
 
-         echo -e \"\nend of filter_gencode_counts : $(date)\n\" >>{log.exec_time}
+         echo -e \"\nend of filter_transcript_counts : $(date)\n\" >>{log.exec_time}
          echo -e \"******\" >>{log.exec_time}
 
          """
@@ -517,7 +517,7 @@ rule filter_gencode_counts:
 #
 rule test_diff_counts:
   input:
-    counts = NO_GENCODE_COUNTS,
+    counts = MASKED_COUNTS,
     sample_conditions = SAMPLE_CONDITIONS_FULL,
     binary = TTEST_FILTER
   output:
@@ -554,28 +554,3 @@ rule merge_tags:
     shell("{MERGE_TAGS} " + options + " {input.counts} | gzip -c > {output}")
     shell("echo -e \"\nend of merge_tags : $(date)\n\" >>{log.exec_time}")
     shell("echo -e \"******\" >>{log.exec_time}")
-
-###############################################################################
-#
-# STEP 4: ANNOTATED DIFF K-MERS
-#rule assembly_fasta:
-#  input: MERGED_DIFF_COUNTS
-#  output: ASSEMBLIES_FASTA
-#  shell: """
-#    zcat {input} | tail -n+2 | awk '{{print ">"$3"\\n"$2}}' | gzip -c > {output}
-#  """
-#
-#rule gsnap_align:
-#  input: ASSEMBLIES_FASTA
-#  output: ASSEMBLIES_BAM
-#  threads: 10
-#  shell: """
-#
-#  	gsnap -D {GSNAP_INDEX_DIR} -d {GSNAP_INDEX_NAME} \
-#            --gunzip -t {threads} -A sam -B 2 -N 1 {input} \
-#            | samtools view -bS - \
-#            | samtools sort - -o {output} \
-#            && samtools index {output}
-#
-#
-#         """

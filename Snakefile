@@ -149,7 +149,7 @@ rule download_kallisto:
 #
 # DOWNLOAD REFERENCE FILES
 #
-# Download the gencode transcripts in fasta format
+# Download the gencode transcripts in fasta format (if no input transcriptome)
 rule gencode_download:
   output: REF_TRANSCRIPT_FASTA
   shell: "wget ftp://ftp.sanger.ac.uk/pub/gencode/Gencode_human/release_24/gencode.v24.transcripts.fa.gz -O {output}"
@@ -315,12 +315,14 @@ rule differential_gene_expression:
     # Load counts data
     countsData = read.table("{input.gene_counts}",
                             header=T,
-                            row.names=1)
+                            row.names=1,
+			    check.names=FALSE)
 
     # Load col data with sample specifications
     colData = read.table("{input.sample_conditions}",
                          header=T,
-                         row.names=1)
+                         row.names=1,
+			 check.names=FALSE)
 
     write(colnames(countsData),stderr())
     write(rownames(colData),stderr())
@@ -453,12 +455,12 @@ rule join_counts:
 ###############################################################################
 #
 # STEP 3: FILTER-OUT KNOWN K-MERS
-#         Download gencode transcripts set and remove the k-mer occuring this
+#         Default: Download gencode transcripts set and remove the k-mer occuring this
 #         set from the one found in the experimental data
 #
 
-# 3.2 Counts k-mer of all gencode transcript (for further filtration)
-rule gencode_count:
+# 3.2 Counts k-mer of all transcript (for further filtration)
+rule ref_transcript_count:
   input: REF_TRANSCRIPT_FASTA
   output: temp(REF_TRANSCRIPT_FASTA + ".jf")
   threads: MAX_CPU_JELLYFISH
@@ -469,27 +471,27 @@ rule gencode_count:
       options += " -C"
     shell("{JELLYFISH_COUNT} " + options + " <({ZCAT} {input})")
 
-rule gencode_dump:
+rule ref_transcript_dump:
   input: REF_TRANSCRIPT_FASTA + ".jf"
   output: REF_TRANSCRIPT_COUNTS
   log :
-    exec_time = LOGS + "/jellyfishDumpGencodeCounts_exec_time.log"
+    exec_time = LOGS + "/jellyfishDumpRefTrancriptCounts_exec_time.log"
   threads: MAX_CPU_SORT
   resources: ram = MAX_MEM_SORT
   shell: """
 
          echo -e \"******\" >{log.exec_time}
-         echo -e \"start of gencode_dump : $(date)\n\" >>{log.exec_time}
+         echo -e \"start of ref_transcript_dump : $(date)\n\" >>{log.exec_time}
 
 
         {JELLYFISH_DUMP} -c {input} | {SORT} -k 1 -S {resources.ram}G --parallel {threads}| pigz -p {threads} -c > {output}
 
-        echo -e \"\nend of rule gencode_dump : $(date)\n\" >>{log.exec_time}
+        echo -e \"\nend of rule ref_transcript_dump : $(date)\n\" >>{log.exec_time}
         echo -e \"******\" >>{log.exec_time}
 
         """
 
-# 3.3 Filter counter k-mer that are present in the gencode set
+# 3.3 Filter counter k-mer that are present in the transcriptome set
 rule filter_transcript_counts:
   input:
     counts = RAW_COUNTS,

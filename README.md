@@ -25,10 +25,13 @@ Before using Dekupl-run, install these dependencies:
 
 ## Installation and usage
 
+Either use the Docker container (updated daily, https://hub.docker.com/r/ebio/dekupl/), or:
+
 1. Clone this repository including submodules : `git clone --recursive https://github.com/Transipedia/dekupl-run.git`
-2. Edit the config.json file to add the list of your samples, their conditions and the location their FASTQ file. See next section for parameters description.
-3. Run the pipeline with then `snakemake -jNB_THREADS --resources ram=MAX_MEMORY -p` command. Replace `NB_THREADS` with the number of threads and `MAX_MEMORY` with the maximum memory (in Megabyte) you want DEkupl to allocate.
-4. Once Dekupl-run has been fully executed, DE contigs produced by Dekupl-run
+2. Install dependencies above
+3. Edit the config.json file to add the list of your samples, their conditions and the location their FASTQ file. See next section for parameters description.
+4. Run the pipeline with then `snakemake -jNB_THREADS --resources ram=MAX_MEMORY -p` command. Replace `NB_THREADS` with the number of threads and `MAX_MEMORY` with the maximum memory (in Megabyte) you want DEkupl to allocate.
+5. Once Dekupl-run has been fully executed, DE contigs produced by Dekupl-run
    (under `DEkupl_results/A_vs_B_kmer_counts/merged-diff-counts.tsv.gz`)
    can be annotate using [Dekupl-annotation](https://github.com/Transipedia/dekupl-annotation)
 
@@ -92,6 +95,7 @@ FileName | Description
 
 ## FAQ
 - if new samples are added to the config.json, make sure to remove the `metadata` folder in order to force SnakeMake to re-make all targets that depends on this file
+- Snakemake uses Rscript, not R. If a R module is not installed, type `which Rscript` and `which R` and make sure they point to the same installation of R.
 
 ## TODO
 

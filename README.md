@@ -60,6 +60,8 @@ Either use the Docker container (updated daily, https://hub.docker.com/r/ebio/de
   `condition`. The FASTQ files for a sample will be located using the following
   command
     `fastq_dir/sample_name_{1,2}.fastq.gz`
+- **transcript_fasta**: The reference transcriptome to be used for masking. By default DEKupl-run uses the human Gencode transcriptome for masking. To change this, add to the config.json file:
+`"transcript_fasta":my_transciptome.fa`
 
 ## Output files
 

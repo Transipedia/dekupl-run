@@ -1,6 +1,6 @@
 # dekupl-run
 
-DE-kupl is a pipeline that finds differentially expressed k-mers between RNA-Seq datasets.
+DE-kupl is a pipeline that finds differentially expressed k-mers between RNA-Seq datasets under The MIT License.
 
 Dekupl-run handles the first part of the [DE-kupl pipeline](https://github.com/Transipedia/dekupl) from raw FASTQ to
 the production of contigs from differentially expressed k-mers.

@@ -99,7 +99,6 @@ FileName | Description
 
 If you are interested in running a DE-Kupl-style analysis on whole-genome data, i.e. without using a reference transcriptome, please use [this branch](https://github.com/Transipedia/dekupl-run/tree/wgs).
 
-
 ## FAQ
 - if new samples are added to the config.json, make sure to remove the `metadata` folder in order to force SnakeMake to re-make all targets that depends on this file
 - Snakemake uses Rscript, not R. If a R module is not installed, type `which Rscript` and `which R` and make sure they point to the same installation of R.

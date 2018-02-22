@@ -448,7 +448,7 @@ rule jellyfish_dump:
          echo -e \"******\" >{log.exec_time}
          echo -e \"start of rule jellyfish_dump : $(date)\n\" >>{log.exec_time}
 
-         {JELLYFISH_DUMP} -c {input} | {SORT} -k 1 -S {resources.ram}G --parallel {threads}| pigz -p {threads} -c > {output}
+         {JELLYFISH_DUMP} -c {input} | {SORT} -k 1 -S {resources.ram}M --parallel {threads}| pigz -p {threads} -c > {output}
 
          echo -e \"\nend of rule jellyfish_dump : $(date)\n\" >>{log.exec_time}
          echo -e \"******\" >>{log.exec_time}
@@ -511,7 +511,7 @@ rule ref_transcript_dump:
          echo -e \"start of ref_transcript_dump : $(date)\n\" >>{log.exec_time}
 
 
-        {JELLYFISH_DUMP} -c {input} | {SORT} -k 1 -S {resources.ram}G --parallel {threads}| pigz -p {threads} -c > {output}
+        {JELLYFISH_DUMP} -c {input} | {SORT} -k 1 -S {resources.ram}M --parallel {threads}| pigz -p {threads} -c > {output}
 
         echo -e \"\nend of rule ref_transcript_dump : $(date)\n\" >>{log.exec_time}
         echo -e \"******\" >>{log.exec_time}

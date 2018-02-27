@@ -60,6 +60,7 @@ KMER_LENGTH     = config['kmer_length'] if 'kmer_length'  in config else 31
 DIFF_METHOD     = config['diff_method'] if 'diff_method'  in config else 'DESeq2'
 OUTPUT_DIR      = config['output_dir']
 FASTQ_DIR       = config['fastq_dir']
+ANNOTATION_TYPE = config['annotation_type']
 
 # DIRECTORIES
 BIN_DIR         = "bin"
@@ -179,7 +180,7 @@ rule download_kallisto:
 # Download the gencode transcripts in fasta format (if no input transcriptome)
 rule gencode_download:
   output: REF_TRANSCRIPT_FASTA
-  shell: "wget ftp://ftp.sanger.ac.uk/pub/gencode/Gencode_human/release_24/gencode.v24.transcripts.fa.gz -O {output}"
+ shell: "wget ftp://ftp.sanger.ac.uk/pub/gencode/Gencode_human/release_24/gencode.v24.transcripts.fa.gz -O {output}"
 
 
 ###############################################################################
@@ -278,12 +279,23 @@ rule transcript_to_gene_mapping:
   input: REF_TRANSCRIPT_FASTA
   output: TRANSCRIPT_TO_GENE_MAPPING
   run:
-    mapping = open(output[0], 'w')
-    with gzip.open(input[0], 'rt') as f:
-      for line in f:
-        if line[0] == ">":
-          fields = line[1:].split("|",2)
-          mapping.write("\t".join([fields[0],fields[1]]) + "\n")
+      #print( ANNOTATION_TYPE )
+    if ANNOTATION_TYPE == "gencode":
+      mapping = open(output[0], 'w')
+      #print( "gencode annotation" )
+      with gzip.open(input[0], 'rt') as f:
+        for line in f:
+          if line[0] == ">":
+            fields = line[1:].split("|",2)
+            mapping.write("\t".join([fields[0],fields[1]]) + "\n")
+    elif ANNOTATION_TYPE == "ensembl":
+      mapping = open(output[0], 'w')
+      #print( "ensembl annotation" )
+      with gzip.open(input[0], 'rt') as f:
+        for line in f:
+          if line[0] == ">":
+            fields = line[1:].split(' ')
+            mapping.write("\t".join([fields[0],fields[3].replace("gene:","").replace("\n","").split('.')[0], ]) + "\n")
 
 # 1.6 Convert transcript counts to gene counts
 rule gene_counts:
@@ -306,13 +318,18 @@ rule gene_counts:
       header = f.readline().rstrip()
       for line in f:
         counts = line.split()
-        transcript_id, trail = counts[0].split("|",1)
-        gene_id = conversion_hash[transcript_id]
-        counts[1:] = [ float(i) for i in counts[1:] ]
-        if gene_id in gene_counts:
-          gene_counts[gene_id] = [ sum(i) for i in zip(gene_counts[gene_id], counts[1:]) ]
+        if ANNOTATION_TYPE == "gencode":
+          transcript_id, trail = counts[0].split("|",1)
         else:
-          gene_counts[gene_id] = counts[1:]
+          if ANNOTATION_TYPE == "ensembl":
+            transcript_id = counts[0]
+        
+	    gene_id = conversion_hash[transcript_id]
+            counts[1:] = [ float(i) for i in counts[1:] ]
+            if gene_id in gene_counts:
+                gene_counts[gene_id] = [ sum(i) for i in zip(gene_counts[gene_id], counts[1:]) ]
+            else:
+                gene_counts[gene_id] = counts[1:]
     # print Gene counts
     with gzip.open(output[0], 'wb') as f:
       f.write(bytes(header + "\n",'UTF-8'))

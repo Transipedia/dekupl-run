@@ -28,6 +28,7 @@
 
 import os
 import gzip
+import datetime
 from snakemake.utils import R
 
 __author__ = "Jérôme Audoux (jerome.audoux@inserm.fr)"
@@ -58,6 +59,8 @@ CHUNK_SIZE      = config['chunk_size']  if 'chunk_size'   in config else 1000000
 TMP_DIR         = config['tmp_dir']     if 'tmp_dir'      in config else os.getcwd()
 KMER_LENGTH     = config['kmer_length'] if 'kmer_length'  in config else 31
 DIFF_METHOD     = config['diff_method'] if 'diff_method'  in config else 'DESeq2'
+FRAG_LENGTH     = config['fragment_length'] if 'fragment_length' in config else 200
+FRAG_STD_DEV    = config['fragment_standard_deviation'] if 'fragment_standard_deviation' in config else 30
 OUTPUT_DIR      = config['output_dir']
 FASTQ_DIR       = config['fastq_dir']
 
@@ -131,12 +134,26 @@ else:
     sys.exit("Invalid value for 'diff_method', possible choices are: 'DESeq2' and 'Ttest'")
 
 # VERIFY LIB_TYPE VALUE
-if LIB_TYPE not in ['rf', 'fr', 'unstranded']:
+if LIB_TYPE not in ['rf', 'fr', 'unstranded', 'single']:
     sys.exit("Invalid value for 'lib_type', possible choices are: 'rf', 'rf' and 'unstranded'")
 
 rule all:
   input: MERGED_DIFF_COUNTS, DEGS
 
+
+# LOG FUNCTIONS
+def current_date(): 
+    return datetime.datetime.now().strftime("%d %B %Y, %H:%M:%S")
+
+def start_log(log_file, rule_name):
+    with open(log_file, "w") as f:
+        f.write("******\n")
+        f.write("start of rule " + rule_name + " : " + current_date() + "\n")
+
+def end_log(log_file, rule_name):
+    with open(log_file, "a") as f:
+        f.write("\nend of rule " + rule_name + " : " + current_date() + "\n")
+        f.write("******\n");
 
 ###############################################################################
 #
@@ -251,17 +268,31 @@ rule kallisto_quantif:
     run_info      = KALLISTO_DIR + "/{sample}/run_info.json"
   log : LOGS + "/{sample}_kallisto.log"
   threads: 1
-  shell: """
+  run:
+    start_log(log[0],"kallisto_quantif")
+    shell("{KALLISTO} quant -i {input.index} -o {output.dir} {input.r1} {input.r2} 2>> {log}")
+    end_log(log[0],"kallisto_quantif")
 
-         echo -e \"******\" >{log}
-         echo -e \"start of rule kallisto_quantif : $(date)\n\" >>{log}
-
-         {KALLISTO} quant -i {input.index} -o {output.dir} {input.r1} {input.r2} 2>> {log}
-
-         echo -e \"\nend of rule kallisto_quantif : $(date)\n\" >>{log}
-         echo -e \"******\" >>{log}
-
-         """
+rule kallisto_quantif_single_end:
+  input:
+    reads = FASTQ_DIR + "/{sample}.fastq.gz",
+    index = KALLISTO_INDEX
+  resources: ram = MAX_MEM_KALLISTO
+  params:
+    fragment_length     = FRAG_LENGTH,  #-l, --fragment-length=DOUBLE  Estimated average fragment length
+    standard_deviation  = FRAG_STD_DEV, #-s, --sd=DOUBLE               Estimated standard deviation of fragment length
+  output:
+    dir           = KALLISTO_DIR + "/{sample}",
+    abundance_h5  = KALLISTO_DIR + "/{sample}/abundance.h5",
+    abundance_tsv = KALLISTO_DIR + "/{sample}/abundance.tsv",
+    run_info      = KALLISTO_DIR + "/{sample}/run_info.json"
+  log : LOGS + "/{sample}_kallisto.log"
+  threads: 1
+  run:
+    start_log(log[0],"kallisto_quantif")
+    options = "--single --fragment-length {params.fragment_length} --sd {params.standard_deviation}"
+    shell("{KALLISTO} quant -i {input.index} -o {output.dir} " + options + " {input.reads} 2>> {log}")
+    end_log(log[0],"kallisto_quantif")
 
 # 1.4 Merge all transcripts counts from kallisto abundance files
 rule transcript_counts:
@@ -418,8 +449,7 @@ rule jellyfish_count:
   run:
     options = "-L 2 -m {KMER_LENGTH} -s 10000 -t {threads} -o {output} -F 2"
 
-    shell("echo -e \"******\" >{log.exec_time}")
-    shell("echo -e \"start of rule jellyfish_count (raw counts) : $(date)\n\" >>{log.exec_time}")
+    start_log(log['exec_time'], "jellyfish_count (raw counts)")
 
     if LIB_TYPE == "rf":
       options += " <({ZCAT} {input.r1} | {REVCOMP}) <({ZCAT} {input.r2})"
@@ -433,8 +463,25 @@ rule jellyfish_count:
       sys.exit('Unknown library type')
 
     shell("{JELLYFISH_COUNT} " + options)
-    shell("echo -e \"\nend of rule jellyfish_count : $(date)\n\" >>{log.exec_time}")
-    shell("echo -e \"******\" >>{log.exec_time}")
+    end_log(log['exec_time'], "jellyfish_count")
+
+rule jellyfish_count_single_end:
+  input:
+    reads = FASTQ_DIR + "/{sample}.fastq.gz"
+  output: COUNTS_DIR + "/{sample}.jf"
+  log:
+    exec_time = LOGS + "/{sample}_jellyfishRawCounts_exec_time.log"
+  threads: MAX_CPU_JELLYFISH
+  resources: ram = MAX_MEM_SORT
+  run:
+    options = "-L 2 -m {KMER_LENGTH} -s 10000 -t {threads} -o {output} -F 2"
+
+    if LIB_TYPE == "unstranded":
+      options += " -C"
+
+    start_log(log['exec_time'], "jellyfish_count (raw counts)")
+    shell("{JELLYFISH_COUNT} " + options + " <({ZCAT} {input.reads})")
+    end_log(log['exec_time'], "jellyfish_count")
 
 rule jellyfish_dump:
   input: COUNTS_DIR + "/{sample}.jf"
@@ -443,17 +490,10 @@ rule jellyfish_dump:
   resources: ram = MAX_MEM_SORT
   log :
     exec_time = LOGS + "/{sample}_jellyfishDumpRawCounts_exec_time.log"
-  shell: """
-
-         echo -e \"******\" >{log.exec_time}
-         echo -e \"start of rule jellyfish_dump : $(date)\n\" >>{log.exec_time}
-
-         {JELLYFISH_DUMP} -c {input} | {SORT} -k 1 -S {resources.ram}M --parallel {threads}| pigz -p {threads} -c > {output}
-
-         echo -e \"\nend of rule jellyfish_dump : $(date)\n\" >>{log.exec_time}
-         echo -e \"******\" >>{log.exec_time}
-
-         """
+  run:
+    start_log(log['exec_time'], "jellyfish_dump")
+    shell("{JELLYFISH_DUMP} -c {input} | {SORT} -k 1 -S {resources.ram}M --parallel {threads}| pigz -p {threads} -c > {output}")
+    end_log(log['exec_time'], "jellyfish_dump")
 
 rule join_counts:
   input:
@@ -466,18 +506,9 @@ rule join_counts:
     exec_time = LOGS + "/joinRawCounts_exec_time.log"
   run:
     shell("echo 'tag\t{params.sample_names}' | gzip -c > {output}")
-    shell("""
-
-           echo -e \"******\" >{log.exec_time}
-           echo -e \"start of rule join_counts : $(date)\n\" >>{log.exec_time}
-
-           {JOIN_COUNTS} -r {MIN_REC} -a {MIN_REC_AB} \
-          {input.fastq_files} | gzip -c >> {output}
-
-          echo -e \"\nend of rule dekupl_counter : $(date)\n\" >>{log.exec_time}
-          echo -e \"******\" >>{log.exec_time}
-
-          """)
+    start_log(log['exec_time'], "join_counts")
+    shell("{JOIN_COUNTS} -r {MIN_REC} -a {MIN_REC_AB} {input.fastq_files} | gzip -c >> {output}")
+    end_log(log['exec_time'], "join_counts")
 
 ###############################################################################
 #
@@ -505,18 +536,10 @@ rule ref_transcript_dump:
     exec_time = LOGS + "/jellyfishDumpRefTrancriptCounts_exec_time.log"
   threads: MAX_CPU_SORT
   resources: ram = MAX_MEM_SORT
-  shell: """
-
-         echo -e \"******\" >{log.exec_time}
-         echo -e \"start of ref_transcript_dump : $(date)\n\" >>{log.exec_time}
-
-
-        {JELLYFISH_DUMP} -c {input} | {SORT} -k 1 -S {resources.ram}M --parallel {threads}| pigz -p {threads} -c > {output}
-
-        echo -e \"\nend of rule ref_transcript_dump : $(date)\n\" >>{log.exec_time}
-        echo -e \"******\" >>{log.exec_time}
-
-        """
+  run:
+    start_log(log['exec_time'], "ref_transcript_dump")
+    shell("{JELLYFISH_DUMP} -c {input} | {SORT} -k 1 -S {resources.ram}M --parallel {threads}| pigz -p {threads} -c > {output}")
+    end_log(log['exec_time'], "ref_transcript_dump")
 
 # 3.3 Filter counter k-mer that are present in the transcriptome set
 rule filter_transcript_counts:
@@ -526,17 +549,10 @@ rule filter_transcript_counts:
   output: MASKED_COUNTS
   log:
     exec_time = LOGS + "/filter_transcript_counts_exec_time.log"
-  shell: """
-         echo -e \"******\" >{log.exec_time}
-         echo -e \"start of filter_transcript_counts : $(date)\n\" >>{log.exec_time}
-
-         {DIFF_FILTER} {input.ref_transcript_counts} {input.counts} | gzip -c > {output}
-
-
-         echo -e \"\nend of filter_transcript_counts : $(date)\n\" >>{log.exec_time}
-         echo -e \"******\" >>{log.exec_time}
-
-         """
+  run:
+    start_log(log['exec_time'], "filter_transcript_counts")
+    shell("{DIFF_FILTER} {input.ref_transcript_counts} {input.counts} 2>> {log.exec_time} | gzip -c > {output}")
+    end_log(log['exec_time'], "filter_transcript_counts")
 
 ###############################################################################
 #
@@ -578,8 +594,6 @@ rule merge_tags:
     if LIB_TYPE == "unstranded":
       options += " -n"
 
-    shell("echo -e \"******\" >{log.exec_time}")
-    shell("echo -e \"start of merge_tags : $(date)\n\" >>{log.exec_time}")
-    shell("{MERGE_TAGS} " + options + " {input.counts} | gzip -c > {output}")
-    shell("echo -e \"\nend of merge_tags : $(date)\n\" >>{log.exec_time}")
-    shell("echo -e \"******\" >>{log.exec_time}")
+    start_log(log['exec_time'], "merge_tags")
+    shell("{MERGE_TAGS} " + options + " {input.counts} 2>> {log.exec_time} | gzip -c > {output}")
+    end_log(log['exec_time'], "merge_tags")

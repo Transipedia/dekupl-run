@@ -37,6 +37,8 @@ Either use the Docker container (updated daily, https://hub.docker.com/r/ebio/de
 
 ## Configuration (config.json)
 
+### General configuration parameters
+
 - **fastq_dir**:  Location of FASTQ files
 - **nb_threads**: Default number of thread to use (unless specified in the
   snakemake command-line
@@ -62,6 +64,18 @@ Either use the Docker container (updated daily, https://hub.docker.com/r/ebio/de
     `fastq_dir/sample_name_{1,2}.fastq.gz`
 - **transcript_fasta**: The reference transcriptome to be used for masking. By default DEKupl-run uses the human Gencode transcriptome for masking. To change this, add to the config.json file:
 `"transcript_fasta":my_transciptome.fa`
+
+### Configuration for single-end libraries
+
+For single-end libraries please specify the following parameters :
+
+- **lib_type**: You can either set the lib_type to `single` in the case of single-end strand-specific library or `unstranded` for single-end unstranded libraries.
+- **fragment_length** : The estimated fragment length (necessary for kallisto quantification). Default value is `200`.
+- **fragment_standard_deviation** : The estimated standard deviation of fragment length (necessary for kallisto quantification). Default value is `30`.
+
+*Notes* :
+The fastq files for single-end samples will be located using the following path : `{fastq_dir}/{sample_name}.fastq.gz`
+If present, parameters **r1_suffix** and **r2_suffix** will be ignored.
 
 ## Output files
 

@@ -32,9 +32,6 @@ use warnings;
 use Pod::Usage;
 use Getopt::Long;
 
-use CracTools::Utils;
-use CracTools::Output;
-
 =head1 NAME
 
 mergeCounts.pl - merge multiple counts files into a single counts table
@@ -58,6 +55,28 @@ Jérôme Audoux C<jerome.audoux@inserm.fr>
 
 =cut
 
+sub getReadingFileHandle {
+  my $file = shift;
+  my $fh;
+  if($file =~ /\.gz$/) {
+    open($fh,"gunzip -c $file |") or die ("Cannot open $file");
+  } else {
+    open($fh,"< $file") or die ("Cannot open $file");
+  }
+  return $fh;
+}
+
+sub getWritingFileHandle {
+  my $file = shift;
+  my $fh;
+  if($file =~ /\.gz$/) {
+    open($fh,"| gzip > $file") or die ("Cannot open $file");
+  } else {
+    open($fh,"> $file") or die ("Cannot open $file");
+  }
+  return $fh;
+}
+
 my $sep = "\t";
 my $output_sep = "\t";
 my $field = 1;
@@ -79,7 +98,7 @@ my %counts;
 my @samples;
 
 foreach my $file (@count_files) {
-  my $fh = CracTools::Utils::getReadingFileHandle($file);
+  my $fh = getReadingFileHandle($file);
   my @headers;
   while(<$fh>) {
     next if $_ =~ /^#/;
@@ -104,12 +123,12 @@ foreach my $file (@count_files) {
   push @samples,@headers;
 }
 
-my $output = CracTools::Output->new();
-$output->printLine("feature",@samples) if !$no_header;
+print join("\t","feature",@samples), "\n"  if !$no_header;
+
 foreach my $feature (keys %counts) {
   my $max_row_count = 0;
   map { $max_row_count = $counts{$feature}{$_} if $counts{$feature}{$_} > $max_row_count } @samples;
   if($max_row_count >= $min_counts) {
-    $output->printLine($feature,map { defined $counts{$feature}{$_}? $counts{$feature}{$_} : 0} @samples);
+    print join("\t",$feature,map { defined $counts{$feature}{$_}? $counts{$feature}{$_} : 0} @samples), "\n";
   }
 }

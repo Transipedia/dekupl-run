@@ -13,6 +13,7 @@ Before using Dekupl-run, install these dependencies:
 - jellyfish
 - pigz
 - CMake
+- boost
 - R: 
   * DESEq2 : open R and execute :
     `> source("https://bioconductor.org/biocLite.R")`

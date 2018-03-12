@@ -108,7 +108,7 @@ KALLISTO        = BIN_DIR + "/kallisto"
 JOIN_COUNTS     = BIN_DIR + "/joinCounts"
 MERGE_COUNTS    = BIN_DIR + "/mergeCounts.pl"
 MERGE_TAGS      = BIN_DIR + "/mergeTags"
-COMPUTE_NF      = BIN_DIR + "/compute_norm_factors.R"
+COMPUTE_NF      = BIN_DIR + "/computeNF"
 JELLYFISH       = "jellyfish"
 JELLYFISH_COUNT = JELLYFISH + " count"
 JELLYFISH_DUMP  = JELLYFISH + " dump"
@@ -172,6 +172,13 @@ rule compile_mergeTags:
     shell("cd share/mergeTags && make")
     shell("ln -s -f ../share/mergeTags/mergeTags bin/")
 
+rule compile_computeNF:
+  output: COMPUTE_NF
+  input: "share/computeNF/computeNF.c"
+  run:
+    shell("cd share/computeNF && make")
+    shell("ln -s -f ../share/computeNF/computeNF bin/")
+
 rule compile_TtestFilter:
   input: "share/TtestFilter/TtestFilter.c"
   output: TTEST_FILTER
@@ -232,12 +239,12 @@ rule sample_conditions:
 
 rule compute_normalization_factors:
   input:
-    raw_counts = RAW_COUNTS
+    raw_counts = RAW_COUNTS,
+    binary = COMPUTE_NF
   output: 
-    nf      = NORMALIZATION_FACTORS,
-    tmp_dir = temp(TMP_DIR + "/NF")
+    nf      = NORMALIZATION_FACTORS
   log: LOGS + "/compute_norm_factors.log"
-  script: COMPUTE_NF
+  shell: "{COMPUTE_NF} -s 0.33 {input.raw_counts} > {output.nf} 2> {log}"
 
 rule sample_conditions_full:
   output:

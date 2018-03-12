@@ -7,3 +7,6 @@
 [submodule "share/mergeTags"]
 	path = share/mergeTags
 	url = https://github.com/Transipedia/dekupl-mergeTags.git
+[submodule "share/computeNF"]
+	path = share/computeNF
+	url = https://github.com/Transipedia/dekupl-computeNF.git

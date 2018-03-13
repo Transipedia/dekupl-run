@@ -244,7 +244,7 @@ rule compute_normalization_factors:
   output: 
     nf      = NORMALIZATION_FACTORS
   log: LOGS + "/compute_norm_factors.log"
-  shell: "{COMPUTE_NF} -s 0.33 {input.raw_counts} > {output.nf} 2> {log}"
+  shell: "{COMPUTE_NF} {input.raw_counts} > {output.nf} 2> {log}"
 
 rule sample_conditions_full:
   output:

@@ -20,6 +20,8 @@ Before using Dekupl-run, install these dependencies:
     `> biocLite("DESeq2")`
   * RColorBrewer
   * pheatmap
+  * foreach
+  * doParallel
 - Python: 
   * rpy2 : `pip3 install rpy2`
 

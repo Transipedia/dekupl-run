@@ -1,7 +1,9 @@
 language: python
-
+python:
+  - '3.5'
+  - '3.4'
+  - '2.7'
 os: linux
-
 addons:
   apt:
     packages:
@@ -11,7 +13,6 @@ addons:
       - pigz
       - cmake
       - r-base
-
 install:
   - R -e 'install.packages("RColorBrewer", repos="https://cloud.r-project.org")'
   - R -e 'install.packages("pheatmap", repos="https://cloud.r-project.org")'
@@ -19,6 +20,5 @@ install:
   - R -e 'install.packages("doParallel", repos="https://cloud.r-project.org")'
   - R -e 'source("https://bioconductor.org/biocLite.R"); biocLite("DESeq2")'
   - pip install rpy2
-
 script: 
   - snakmake --configfile test/config_ttest.json

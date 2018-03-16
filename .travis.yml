@@ -8,7 +8,7 @@ addons:
       - ubuntu-toolchain-r-test
     packages:
       - libboost-math-dev
-      - python-rpy2
+      - python3-rpy2
       - pigz
       - cmake
       - r-base

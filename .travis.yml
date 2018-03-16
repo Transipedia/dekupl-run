@@ -18,7 +18,9 @@ install:
   - pip install snakemake
   - sudo Rscript install_r_packages.R
   # Install latest jellyfish version
-  - wget https://github.com/gmarcais/Jellyfish/releases/download/v2.2.9/jellyfish-2.2.9-linux-static && chmod +x jellyfish-2.2.9-linux-static
+  - wget https://github.com/gmarcais/Jellyfish/releases/download/v2.2.9/jellyfish-2.2.9-linux-static
+  - mv jellyfish-2.2.9-linux-static jellyfish
+  - chmod +x jellyfish
   - export PATH=$PATH:$PWD
 script: 
   - snakemake --configfile tests/config_ttest.json

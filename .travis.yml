@@ -17,7 +17,6 @@ addons:
 before_install:
 
 install:
-  - sudo Rscript install_r_packages.R
   # Install snakemake with conda
   - sudo apt-get update
     # We do this conditionally because it saves us some downloading if the
@@ -32,11 +31,12 @@ install:
   - hash -r
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
-    #- conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION snakemake
-  - conda install -c bioconda snakemake
+  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION -c bioconda snakemake
+    #- conda install -c bioconda snakemake
   - source activate test-environment
   - python setup.py install
   #- sudo pip install rpy2
   #- sudo pip install --user snakemake
+  - sudo Rscript install_r_packages.R
 script: 
   - snakmake --configfile test/config_ttest.json

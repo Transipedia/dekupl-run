@@ -32,7 +32,8 @@ install:
   - hash -r
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
-  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION snakemake
+    #- conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION snakemake
+  - conda install -c bioconda snakemake
   - source activate test-environment
   - python setup.py install
   #- sudo pip install rpy2

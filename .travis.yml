@@ -1,0 +1,24 @@
+language: python
+
+os: linux
+
+addons:
+  apt:
+    packages:
+      - libboost-math-dev
+      - jellyfish
+      - snakemake
+      - pigz
+      - cmake
+      - r-base
+
+install:
+  - R -e 'install.packages("RColorBrewer", repos="https://cloud.r-project.org")'
+  - R -e 'install.packages("pheatmap", repos="https://cloud.r-project.org")'
+  - R -e 'install.packages("foreach", repos="https://cloud.r-project.org")'
+  - R -e 'install.packages("doParallel", repos="https://cloud.r-project.org")'
+  - R -e 'source("https://bioconductor.org/biocLite.R"); biocLite("DESeq2")'
+  - pip install rpy2
+
+script: 
+  - snakmake --configfile test/config_ttest.json

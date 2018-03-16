@@ -47,6 +47,8 @@ logging <- function(str) {
 dir.create(output_tmp, showWarnings = FALSE)
 
 logging(paste("Start Ttest_diff_methods"))
+logging(paste("pvalue_threshold", pvalue_threshold))
+logging(paste("log2fc_threshold", log2fc_threshold))
 
 system(paste(Ttest ,"-p", pvalue_threshold, "-f", log2fc_threshold, "-r", output_pvalue_all, no_GENCODE, normalization_factor_path, conditionA, conditionB, "| gzip -c > ",output_diff_counts))
 

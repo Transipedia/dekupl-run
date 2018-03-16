@@ -2,6 +2,7 @@ language: python
 python:
   - '3.6'
 os: linux
+dist: trusty
 addons:
   apt:
     sources:
@@ -14,7 +15,12 @@ addons:
       - r-base-dev # Not sure if needed
 before_install:
 install:
+  # For Ubuntu 12.04, we have only R 2.x available and thus need an older rpy2
+  # version (2.2.5). For Ubuntu 14.04, we have R 3.0.x available which works
+  # with rpy2 2.3.9 (see trusty packages).
+  - pip install rpy2==2.3.9
   - pip install snakemake rpy2
+  # Install all R packages
   - sudo Rscript install_r_packages.R
   # Install latest jellyfish version
   - wget https://github.com/gmarcais/Jellyfish/releases/download/v2.2.9/jellyfish-2.2.9-linux-static

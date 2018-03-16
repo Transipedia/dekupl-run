@@ -317,7 +317,11 @@ rule transcript_to_gene_mapping:
   output: TRANSCRIPT_TO_GENE_MAPPING
   run:
     mapping = open(output[0], 'w')
-    with gzip.open(input[0], 'rt') as f:
+    if(input[0].endswith('.gz')):
+      opener = gzip.open
+    else:
+      opener = open
+    with opener(input[0], 'rt') as f:
       for line in f:
         if line[0] == ">":
           fields = line[1:].split("|",2)
@@ -534,7 +538,10 @@ rule ref_transcript_count:
     options = "-m {KMER_LENGTH} -s 10000 -t {threads} -o {output}"
     if LIB_TYPE == "unstranded":
       options += " -C"
-    shell("{JELLYFISH_COUNT} " + options + " <({ZCAT} {input})")
+    if(input[0].endswith('.gz')):
+      shell("{JELLYFISH_COUNT} " + options + " <({ZCAT} {input})")
+    else:
+      shell("{JELLYFISH_COUNT} " + options + " {input}")
 
 rule ref_transcript_dump:
   input: REF_TRANSCRIPT_FASTA + ".jf"

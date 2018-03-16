@@ -40,4 +40,4 @@ install:
   - pip install snakemake
   - sudo Rscript install_r_packages.R
 script: 
-  - snakemake --configfile test/config_ttest.json
+  - snakemake --configfile tests/config_ttest.json

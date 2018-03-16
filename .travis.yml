@@ -10,17 +10,9 @@ addons:
       - pigz
       - cmake
       - r-base
-      - r-cran-pheatmap
-      - r-cran-rcolorbrewer
-      - r-cran-foreach
-      - r-cran-doparallel
 install:
-  #- R -e 'install.packages("RColorBrewer", repos="https://cloud.r-project.org")'
-  #- R -e 'install.packages("pheatmap", repos="https://cloud.r-project.org")'
-  #- R -e 'install.packages("foreach", repos="https://cloud.r-project.org")'
-  #- R -e 'install.packages("doParallel", repos="https://cloud.r-project.org")'
-  - R -e 'source("https://bioconductor.org/biocLite.R"); biocLite("DESeq2")'
-  - pip install rpy2
-  - pip install snakemake
+  - sudo Rscript install_r_packages.R
+  - sudo pip install rpy2
+  - sudo pip install snakemake
 script: 
   - snakmake --configfile test/config_ttest.json

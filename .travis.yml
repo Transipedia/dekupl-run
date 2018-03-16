@@ -8,14 +8,13 @@ addons:
       - ubuntu-toolchain-r-test
     packages:
       - libboost-math-dev
-      - python3-rpy2
       - pigz
       - cmake
       - r-base
       - r-base-dev # Not sure if needed
 before_install:
 install:
-  - pip install snakemake
+  - pip install snakemake rpy2
   - sudo Rscript install_r_packages.R
   # Install latest jellyfish version
   - wget https://github.com/gmarcais/Jellyfish/releases/download/v2.2.9/jellyfish-2.2.9-linux-static

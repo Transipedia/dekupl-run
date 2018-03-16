@@ -10,10 +10,11 @@ addons:
       - pigz
       - cmake
       - r-base
-      - r-base-dev 
+      - r-base-dev # Not sure if needed
+      - python-rpy2
 install:
   - sudo Rscript install_r_packages.R
-  - sudo pip install rpy2
+  #- sudo pip install rpy2
   - sudo pip install snakemake
 script: 
   - snakmake --configfile test/config_ttest.json

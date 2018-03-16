@@ -15,6 +15,6 @@ addons:
 install:
   - sudo Rscript install_r_packages.R
   #- sudo pip install rpy2
-  - sudo pip install snakemake
+  - sudo pip install --user snakemake
 script: 
   - snakmake --configfile test/config_ttest.json

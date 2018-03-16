@@ -1,7 +1,5 @@
 language: python
 python:
-  - '3.5'
-  - '3.4'
   - '2.7'
 os: linux
 addons:
@@ -9,7 +7,6 @@ addons:
     packages:
       - libboost-math-dev
       - jellyfish
-      - snakemake
       - pigz
       - cmake
       - r-base
@@ -20,5 +17,6 @@ install:
   - R -e 'install.packages("doParallel", repos="https://cloud.r-project.org")'
   - R -e 'source("https://bioconductor.org/biocLite.R"); biocLite("DESeq2")'
   - pip install rpy2
+  - pip install snakemake
 script: 
   - snakmake --configfile test/config_ttest.json

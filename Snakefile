@@ -100,21 +100,22 @@ NORMALIZED_COUNTS           = GENE_EXP_DIR  + "/normalized_counts.tsv"
 PCA_DESIGN                  = GENE_EXP_DIR  + "/pca_design.tsv"
 
 # binaries
-REVCOMP         = BIN_DIR + "/revCompFastq.pl"
-DEKUPL_COUNTER  = BIN_DIR + "/dekupl-counter"
-DIFF_FILTER     = BIN_DIR + "/diffFilter.pl"
-TTEST_FILTER    = BIN_DIR + "/TtestFilter"
-KALLISTO        = BIN_DIR + "/kallisto"
-JOIN_COUNTS     = BIN_DIR + "/joinCounts"
-MERGE_COUNTS    = BIN_DIR + "/mergeCounts.pl"
-MERGE_TAGS      = BIN_DIR + "/mergeTags"
-COMPUTE_NF      = BIN_DIR + "/computeNF"
-JELLYFISH       = "jellyfish"
-JELLYFISH_COUNT = JELLYFISH + " count"
-JELLYFISH_DUMP  = JELLYFISH + " dump"
-PIGZ            = "pigz"
-ZCAT            = "gunzip -c"
-SORT            = "sort"
+REVCOMP                 = BIN_DIR + "/revCompFastq.pl"
+DEKUPL_COUNTER          = BIN_DIR + "/dekupl-counter"
+DIFF_FILTER             = BIN_DIR + "/diffFilter.pl"
+TTEST_FILTER            = BIN_DIR + "/TtestFilter"
+KALLISTO                = BIN_DIR + "/kallisto"
+JOIN_COUNTS             = BIN_DIR + "/joinCounts"
+MERGE_COUNTS            = BIN_DIR + "/mergeCounts.pl"
+MERGE_TAGS              = BIN_DIR + "/mergeTags"
+COMPUTE_NF              = BIN_DIR + "/computeNF"
+DESEQ2_REF_TRANSCRIPTS  = BIN_DIR + "/DESeq2_ref_transcripts.R"
+JELLYFISH               = "jellyfish"
+JELLYFISH_COUNT         = JELLYFISH + " count"
+JELLYFISH_DUMP          = JELLYFISH + " dump"
+PIGZ                    = "pigz"
+ZCAT                    = "gunzip -c"
+SORT                    = "sort"
 
 # SET MEMORY/THREAD USAGE FOR EACH RULE
 MAX_MEM_KALLISTO  = 4000
@@ -366,82 +367,17 @@ rule differential_gene_expression:
   input:
     gene_counts = GENE_COUNTS,
     sample_conditions = SAMPLE_CONDITIONS
+  params:
+    condition_col = CONDITION_COL,
+    condition_A = CONDITION_A,
+    condition_B = CONDITION_B
   output:
     differentially_expressed_genes  = DEGS,
     dist_matrix			            = DIST_MATRIX,
     norm_counts		                    = NORMALIZED_COUNTS,
     pca_design			            = PCA_DESIGN
   log : LOGS + "/DESeq2_diff_gene_exp.log"
-  run:
-    R("""
-    library(DESeq2)
-    library(RColorBrewer)
-    library(pheatmap)
-    library(ggplot2)
-
-    write(date(),file="{log}")
-
-    # Load counts data
-    countsData = read.table("{input.gene_counts}",
-                            header=T,
-                            row.names=1,
-			    check.names=FALSE)
-
-    # Load col data with sample specifications
-    colData = read.table("{input.sample_conditions}",
-                         header=T,
-                         row.names=1,
-			 check.names=FALSE)
-
-    write(colnames(countsData),stderr())
-    write(rownames(colData),stderr())
-
-    colData = colData[colnames(countsData),,drop=FALSE]
-
-    # Create DESeq2 object
-    dds <- DESeqDataSetFromMatrix(countData=countsData,
-                                  colData=colData,
-                                  design = ~ {CONDITION_COL})
-    dds <- DESeq(dds)
-
-    #normalized counts
-    NormCount<- as.data.frame(counts(dds, normalized=TRUE ))
-
-    #writing in a file normalized counts
-    normalized_counts<-data.frame(id=row.names(NormCount),NormCount,row.names=NULL)
-    write.table(normalized_counts,file="{output.norm_counts}", sep="\t",row.names=F, col.names=T, quote=F)
-
-    write(resultsNames(dds),stderr())
-
-    # Write DEGs
-    res <- results(dds, contrast = c("{CONDITION_COL}","{CONDITION_A}","{CONDITION_B}"))
-    write.table(res,file="{output.differentially_expressed_genes}",sep="\t",quote=FALSE)
-
-    rld<-rlog(dds)
-    sampleDists<-dist(t(assay(rld) ) )
-    sampleDistMatrix<-as.matrix( sampleDists )
-    rownames(sampleDistMatrix)<-colnames(rld)
-    colnames(sampleDistMatrix)<-colnames(rld)
-    colours=colorRampPalette(rev(brewer.pal(9,"Blues")) )(255)
-
-    pdf("{output.dist_matrix}",width=15,height=10)
-
-    pheatmap(sampleDistMatrix,
-	main="clustering of samples",
-	clustering_distance_rows=sampleDists,
-	clustering_distance_cols=sampleDists,
-	col=colours,
-	fontsize = 14)
-
-    data <- plotPCA(rld,ntop=nrow(rld),returnData=TRUE)
-    write.table(data,"{output.pca_design}",row.names=F, col.names=T, quote=F,sep="\t")
-
-    print(ggplot(data,aes(PC1,PC2,color=condition))+geom_point()+geom_text(aes(label=name),hjust=0,vjust=0))
-
-    dev.off()
-
-    write(date(),file="{log}",append=T)
-    """)
+  script: DESEQ2_REF_TRANSCRIPTS
 
 ###############################################################################
 #

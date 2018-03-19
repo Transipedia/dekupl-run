@@ -1,8 +1,9 @@
 sudo: required
 dist: trusty
 language: python
-python:
-  - '3.6'
+python: '3.6'
+r: release
+#r: bioc-devel
 addons:
   apt:
     sources:

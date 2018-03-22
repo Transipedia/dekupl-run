@@ -16,7 +16,7 @@ addons:
       #- r-base-dev
 before_install:
   # Install latest R version
-  - sudo deb https://cloud.r-project.org/bin/linux/ubuntu trusty/
+  - sudo add-apt-repository https://cloud.r-project.org/bin/linux/ubuntu trusty/
   - sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E084DAB9
   - sudo apt-get update
   - sudo apt-get install r-base r-base-dev

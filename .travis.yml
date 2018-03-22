@@ -25,7 +25,8 @@ install:
   # For Ubuntu 12.04, we have only R 2.x available and thus need an older rpy2
   # version (2.2.5). For Ubuntu 14.04, we have R 3.0.x available which works
   # with rpy2 2.3.9 (see trusty packages).
-  - pip install rpy2==2.3.9
+  #- pip install rpy2==2.3.9
+  - pip install rpy2
   - pip install snakemake
   # Install all R packages
   - sudo Rscript install_r_packages.R

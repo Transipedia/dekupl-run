@@ -16,10 +16,11 @@ addons:
       #- r-base-dev
 before_install:
   # Install latest R version
-  - sudo add-apt-repository https://cloud.r-project.org/bin/linux/ubuntu trusty/
+  #- sudo add-apt-repository https://cloud.r-project.org/bin/linux/ubuntu trusty/
+  - echo "deb https://cloud.r-project.org/bin/linux/ubuntu trusty/" | sudo tee -a /etc/apt/sources.list
   - sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E084DAB9
   - sudo apt-get update
-  - sudo apt-get install r-base r-base-dev
+  - sudo apt-get -y install r-base r-base-dev
 install:
   # For Ubuntu 12.04, we have only R 2.x available and thus need an older rpy2
   # version (2.2.5). For Ubuntu 14.04, we have R 3.0.x available which works

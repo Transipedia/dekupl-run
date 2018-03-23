@@ -1,4 +1,5 @@
 {
+  "annotation_type": "gencode",
   "fastq_dir": "data",
   "nb_threads": 8,
   "kmer_length": 31,

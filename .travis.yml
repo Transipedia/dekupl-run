@@ -2,7 +2,10 @@ sudo: required
 dist: trusty
 language: python
 python: '3.6'
-r: release
+cache:
+  directories:
+    - /usr/local/lib/R/site-library
+#r: release
 #r: bioc-devel
 addons:
   apt:

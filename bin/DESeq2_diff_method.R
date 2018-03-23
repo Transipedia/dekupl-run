@@ -45,19 +45,15 @@ output_diff_counts  = snakemake@output$diff_counts
 output_pvalue_all   = snakemake@output$pvalue_all
 output_log          = snakemake@log[[1]]
 
-
 # Temporary files
-shuffle_path              = paste(output_tmp,"/SHUFFLE_tmp.gz",sep="")
 output_tmp_chunks         = paste(output_tmp,"/tmp_chunks/",sep="")
 output_tmp_DESeq2         = paste(output_tmp,"/tmp_DESeq2/",sep="")
 header_no_GENCODE         = paste(output_tmp,"/header_no_GENCODE.txt",sep="")
 tmp_concat                = paste(output_tmp,"/tmp_concat.txt",sep="")
 header_adj_pvalue         = paste(output_tmp,"/header_adj_pvalue.txt",sep="")
 adj_pvalue                = paste(output_tmp,"/adj_pvalue.txt.gz",sep="")
-sorted_adj_pvalue_tmp     = paste(output_tmp,"/sorted_adj_pvalue_tmp.txt",sep="")
 dataDESeq2All             = paste(output_tmp,"/dataDESeq2All.txt.gz",sep="")
 header_dataDESeq2All      = paste(output_tmp,"/header_dataDESeq2All.txt",sep="")
-sorted_dataDESeq2All_tmp  = paste(output_tmp,"/sorted_dataDESeq2All_tmp.txt",sep="")
 dataDESeq2Filtered        = paste(output_tmp,"/dataDESeq2Filtered.txt.gz",sep="")
 final_header_tmp          = paste(output_tmp,"/final_header_tmp.txt.gz",sep="")
 
@@ -92,48 +88,42 @@ if(chunk_size > 1000000){
 # Set the number of cores to use
 registerDoParallel(cores=nb_core)
 
-# SHUFFLE THE KMERS (AVOIDING SHUFFLE THE HEADER)
-system(paste("zcat", no_GENCODE, "| tail -n +2 | shuf | gzip -c >" ,shuffle_path))
-logging("Shuffle done")
+# CLEAN THE TMP FOLDER
+system("rm -r ", output_tmp_chunks,sep="")
 
 # SAVE THE HEADER INTO A FILE
 system(paste("zcat", no_GENCODE, "| head -1 >", header_no_GENCODE))
 
-# SPLIT THE MAIN FILE INTO CHUNKS WITH AUTOINCREMENTED NAMES
-# FIXME make sure the directory is empty
-# TODO these files should be gzipped to improve space efficency
-
-system(paste("zcat", shuffle_path, "| awk -v", paste("chunk_size=", chunk_size,sep=""), "-v", paste("output_tmp_chunks=",output_tmp_chunks,sep=""),
+# SHUFFLE AND SPLIT THE MAIN FILE INTO CHUNKS WITH AUTOINCREMENTED NAMES
+system(paste("zcat", no_GENCODE, "| tail -n +2 | shuf | awk -v", paste("chunk_size=", chunk_size,sep=""), "-v", paste("output_tmp_chunks=",output_tmp_chunks,sep=""),
              "'NR%chunk_size==1{OFS=\"\\t\";x=++i\"_subfile.txt.gz\"}{OFS=\"\";print | \"gzip >\" output_tmp_chunks x}'"))
 
-# Remove shuffle path
-system(paste("rm",shuffle_path))
+logging("Shuffle and split done")
 
 nb_line_last_file = nbLineLastFile(output_tmp_chunks)
 nb_files = nbFiles(output_tmp_chunks)
 
-# CONCATENATE THE LAST FILE CREATED WITH THE SECOND LAST ONE AND THEN REMOVE IT
-# IN ORDER TO AVOID TOO SHORT FILES
-# IF THE MERGED FILE IS TOO LARGE, IT WILL BE DIVIDED IN TWO (jerome: it does not look like that we are doing it...)
-
+# IF THE LAST FILE HAS LESS THAN HALF OF THE CHUNK SIZE
+# CONCATENATE THE LAST 2 FILES AND THEN SPLIT
 if(nb_files > 1 && nb_line_last_file < (chunk_size/2)) {
 
   ## CONCATENATE THE 2 FILES
   logging(paste("The last file has",nb_line_last_file,"line(s) it will be concatenated to the second last one"))
 
-  before_last_file = paste(output_tmp_chunks, (nb_files - 2), "_subfile.txt.gz", sep="")
-  last_file        = paste(output_tmp_chunks, (nb_files - 1), "_subfile.txt.gz", sep="")
+  before_last_file = paste(output_tmp_chunks, (nb_files - 1), "_subfile.txt.gz", sep="")
+  last_file        = paste(output_tmp_chunks, (nb_files), "_subfile.txt.gz", sep="")
 
-  system(paste("zcat", before_last_file, ">",  tmp_concat))
-  system(paste("zcat", last_file,        ">>", tmp_concat))
+  #CONCATENATE THE LAST 2 FILES INTO A TMP FILE
+  system(paste("cat", before_last_file, last_file, ">", tmp_concat, sep=" "))
 
+  #NUMBER OF LINE OF THE TMP FILE
   nb_line_last_file = chunk_size + nb_line_last_file
-
-  logging(paste("The last file has",nb_line_last_file,"line(s) it will be splitted in two"))
+ 
+  logging(paste("The last file has", nb_line_last_file, "line(s) it will be splitted in two"))
 
   ### DIVIDE IN TWO PARTS
-  system(paste("head -n", floor(nb_line_last_file/2),                          tmp_concat, "| gzip >", before_last_file))
-  system(paste("tail -n", paste("+", floor(nb_line_last_file/2 + 1), sep=""),  tmp_concat, "| gzip >", last_file))
+  system(paste("zcat", tmp_concat, "| head -n", floor(as.integer(nb_line_last_file/2)), "| gzip >", before_last_file))
+  system(paste("zcat", tmp_concat, "| tail -n", paste("+", floor(as.integer(nb_line_last_file/2 + 1)), sep=""), "| gzip >", last_file))
   system(paste("rm", tmp_concat))
 }
 
@@ -196,6 +186,7 @@ invisible(foreach(i=1:length(lst_files)) %dopar% {
             # meanB
             # log2FC
             # NormCount
+            
             write.table(data.frame(ID=rownames(resDESeq2),
                                    meanA=rowMeans(NormCount[,rownames(subset(colData, condition == conditionA))]),
                                    meanB=rowMeans(NormCount[,rownames(subset(colData, condition == conditionB))]),
@@ -204,7 +195,7 @@ invisible(foreach(i=1:length(lst_files)) %dopar% {
                         file=gzfile(paste(output_tmp_DESeq2,i,"_dataDESeq2_part_tmp.gz", sep="")),
                         sep="\t",quote=FALSE,
                         row.names = FALSE,
-                        col.names = TRUE)
+                        col.names = FALSE)
 
             # WRITE PVALUES FOR THE CURRENT CHUNK
             write.table(data.frame(ID=rownames(resDESeq2),pvalue=resDESeq2$pvalue),
@@ -228,15 +219,15 @@ system(paste("find", output_tmp_DESeq2, "-name '*_pvalue_part_tmp.gz' | xargs ca
 logging(paste("Pvalues merged into",output_pvalue_all))
 
 #MERGE ALL CHUNKS DESeq2 INTO A FILE
-system(paste("find", output_tmp_DESeq2, "-name '*_dataDESeq2_part_tmp.gz' | xargs zcat | awk '{OFS=\"\\t\"}{if(NR==1){print}else{if($1 !~ \"ID\"){print}}}' | gzip >", dataDESeq2All))
+system(paste("find", output_tmp_DESeq2, "-name '*_dataDESeq2_part_tmp.gz' | xargs cat >", dataDESeq2All))
 
 logging(paste("DESeq2 results merged into",dataDESeq2All))
 
-# Remove DESeq2 chunked results
+# REMOVE DESeq2 CHUNKS RESULTS
 system(paste("rm -rf", output_tmp_DESeq2))
 
-# SAVE THE COLNAMES INTO HEADER.TXT AND REMOVE THE COLNAME ID
-system(paste("zcat", dataDESeq2All, "| head -1 | cut -f2- >", header_dataDESeq2All))
+# CREATE THE HEADER FOR THE DESeq2 TABLE RESULT
+system(paste("echo -e 'ID\tmeanA\tmeanB\tlog2FC' | paste - ", header_no_GENCODE," > ", header_dataDESeq2All, sep=""))
 
 #CREATE AND WRITE THE ADJUSTED PVALUE UNDER THRESHOLD WITH THEIR ID
 pvalueAll         = read.table(output_pvalue_all, header=F, stringsAsFactors=F)
@@ -257,28 +248,24 @@ write.table(adjPvalue_dataframe,
             file=gzfile(adj_pvalue),
             sep="\t",
             quote=FALSE,
-            col.names = TRUE,
+            col.names = FALSE,
             row.names = FALSE)
 
 logging("Pvalues are adjusted")
 
 #SAVE THE HEADER
-system(paste("zcat", adj_pvalue, "|head -1 >", header_adj_pvalue))
+system(paste("echo -e 'ID\tpvalue' > ", header_adj_pvalue, sep=""))
 
 #LEFT JOIN INTO dataDESeq2All
 #GET ALL THE INFORMATION (ID,MEAN_A,MEAN_B,LOG2FC,COUNTS) FOR DE KMERS
-system(paste("zcat", adj_pvalue, "| tail -n +2 | sort -k1,1 >", sorted_adj_pvalue_tmp))
-system(paste("rm",adj_pvalue))
-system(paste("zcat", dataDESeq2All,"| tail -n +2 | sort -k1,1 >", sorted_dataDESeq2All_tmp))
-system(paste("rm",dataDESeq2All))
-system(paste("join", sorted_adj_pvalue_tmp, sorted_dataDESeq2All_tmp, "| awk 'function abs(x){return ((x < 0.0) ? -x : x)} {if (abs($5) >=", log2fc_threshold, ") print $0}' | tr ' ' '\t' | gzip >", dataDESeq2Filtered))
-system(paste("rm",sorted_adj_pvalue_tmp, sorted_dataDESeq2All_tmp))
+system(paste("join <(zcat ", adj_pvalue,") <(zcat ", dataDESeq2All," ) | awk 'function abs(x){return ((x < 0.0) ? -x : x)} {if (abs($5) >=", log2fc_threshold, ") print $0}' | tr ' ' '\t' | gzip > ", dataDESeq2Filtered,sep=""))
+system(paste("rm", adj_pvalue, dataDESeq2All))
 
 logging("Get counts for pvalues that passed the filter")
 
 #CREATE THE FINAL HEADER USING ADJ_PVALUE AND DATADESeq2ALL ONES AND COMPRESS THE FILE
 system(paste("paste", header_adj_pvalue, header_dataDESeq2All, "| gzip >", final_header_tmp))
-system(paste("cat", final_header_tmp, dataDESeq2Filtered, ">", output_diff_counts))
+system(paste("zcat", final_header_tmp, dataDESeq2Filtered, "| gzip > ", output_diff_counts))
 system(paste("rm", dataDESeq2Filtered))
 
 logging("Analysis done")

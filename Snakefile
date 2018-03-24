@@ -141,6 +141,33 @@ if LIB_TYPE not in ['rf', 'fr', 'unstranded', 'single']:
 rule all:
   input: MERGED_DIFF_COUNTS, DEGS
 
+# Print Variables in use
+sys.stderr.write(
+"""            __   _  _                _
+           /   \/__\ | ___   _ _ __ | |
+          / /\ /_\ | |/ / | | | '_ \| |
+         / /_///__ |   <| |_| | |_) | |
+        /___,'\__/ |_|\_\\\__,_| .__/|_|
+                              |_|      
+""")
+
+sys.stderr.write("***************** PARAMETERS ******************\n")
+
+sys.stderr.write("\n* General\n")
+sys.stderr.write("KMER_LENGTH = " + str(KMER_LENGTH) + "\n")
+
+sys.stderr.write("\n* K-mer counting\n")
+sys.stderr.write("MIN_REC     = " + str(MIN_REC) + "\n")
+sys.stderr.write("MIN_REC_AB  = " + str(MIN_REC_AB) + "\n")
+
+sys.stderr.write("\n* Diff analysis\n")
+sys.stderr.write("CONDITION_A = " + CONDITION_A + "\n")
+sys.stderr.write("CONDITION_B = " + CONDITION_B + "\n")
+sys.stderr.write("PVALUE_MAX  = " + str(PVALUE_MAX) + "\n")
+sys.stderr.write("LOG2FC_MIN  = " + str(LOG2FC_MIN) + "\n")
+sys.stderr.write("DIFF_METHOD = " + DIFF_METHOD + "\n")
+
+
 
 # LOG FUNCTIONS
 def current_date(): 

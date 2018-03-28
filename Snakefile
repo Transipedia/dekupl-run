@@ -573,5 +573,5 @@ rule merge_tags:
       options += " -n"
 
     start_log(log['exec_time'], "merge_tags")
-    shell("{MERGE_TAGS} " + options + " {input.counts} 2>> {log.exec_time} | gzip -c > {output}")
+    shell("{MERGE_TAGS} " + options + " {input.counts} | gzip -c > {output}")
     end_log(log['exec_time'], "merge_tags")

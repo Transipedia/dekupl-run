@@ -40,3 +40,4 @@ install:
   - export PATH=$PATH:$PWD
 script: 
   - snakemake --configfile tests/config_ttest.json
+  - snakemake --configfile tests/config_deseq2.json

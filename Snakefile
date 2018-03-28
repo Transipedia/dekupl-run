@@ -100,21 +100,22 @@ NORMALIZED_COUNTS           = GENE_EXP_DIR  + "/normalized_counts.tsv"
 PCA_DESIGN                  = GENE_EXP_DIR  + "/pca_design.tsv"
 
 # binaries
-REVCOMP         = BIN_DIR + "/revCompFastq.pl"
-DEKUPL_COUNTER  = BIN_DIR + "/dekupl-counter"
-DIFF_FILTER     = BIN_DIR + "/diffFilter.pl"
-TTEST_FILTER    = BIN_DIR + "/TtestFilter"
-KALLISTO        = BIN_DIR + "/kallisto"
-JOIN_COUNTS     = BIN_DIR + "/joinCounts"
-MERGE_COUNTS    = BIN_DIR + "/mergeCounts.pl"
-MERGE_TAGS      = BIN_DIR + "/mergeTags"
-COMPUTE_NF      = BIN_DIR + "/computeNF"
-JELLYFISH       = "jellyfish"
-JELLYFISH_COUNT = JELLYFISH + " count"
-JELLYFISH_DUMP  = JELLYFISH + " dump"
-PIGZ            = "pigz"
-ZCAT            = "gunzip -c"
-SORT            = "sort"
+REVCOMP                 = BIN_DIR + "/revCompFastq.pl"
+DEKUPL_COUNTER          = BIN_DIR + "/dekupl-counter"
+DIFF_FILTER             = BIN_DIR + "/diffFilter.pl"
+TTEST_FILTER            = BIN_DIR + "/TtestFilter"
+KALLISTO                = BIN_DIR + "/kallisto"
+JOIN_COUNTS             = BIN_DIR + "/joinCounts"
+MERGE_COUNTS            = BIN_DIR + "/mergeCounts.pl"
+MERGE_TAGS              = BIN_DIR + "/mergeTags"
+COMPUTE_NF              = BIN_DIR + "/computeNF"
+DESEQ2_REF_TRANSCRIPTS  = BIN_DIR + "/DESeq2_ref_transcripts.R"
+JELLYFISH               = "jellyfish"
+JELLYFISH_COUNT         = JELLYFISH + " count"
+JELLYFISH_DUMP          = JELLYFISH + " dump"
+PIGZ                    = "pigz"
+ZCAT                    = "gunzip -c"
+SORT                    = "sort"
 
 # SET MEMORY/THREAD USAGE FOR EACH RULE
 MAX_MEM_KALLISTO  = 4000
@@ -137,9 +138,37 @@ else:
 if LIB_TYPE not in ['rf', 'fr', 'unstranded', 'single']:
     sys.exit("Invalid value for 'lib_type', possible choices are: 'rf', 'rf' and 'unstranded'")
 
+# Print Variables in use
+onstart:
+    sys.stderr.write(
+    """                ___  __ _                _
+               /   \/__\ | ___   _ _ __ | |
+              / /\ /_\ | |/ / | | | '_ \| |
+             / /_///__ |   <| |_| | |_) | |
+            /___,'\__/ |_|\_\\\__,_| .__/|_|
+                                  |_|      
+    
+    """)
+
+    sys.stderr.write("***************** PARAMETERS ******************\n")
+
+    sys.stderr.write("\n* General\n")
+    sys.stderr.write("KMER_LENGTH = " + str(KMER_LENGTH) + "\n")
+
+    sys.stderr.write("\n* K-mer counting\n")
+    sys.stderr.write("MIN_REC     = " + str(MIN_REC) + "\n")
+    sys.stderr.write("MIN_REC_AB  = " + str(MIN_REC_AB) + "\n")
+
+    sys.stderr.write("\n* Diff analysis\n")
+    sys.stderr.write("CONDITION_A = " + CONDITION_A + "\n")
+    sys.stderr.write("CONDITION_B = " + CONDITION_B + "\n")
+    sys.stderr.write("PVALUE_MAX  = " + str(PVALUE_MAX) + "\n")
+    sys.stderr.write("LOG2FC_MIN  = " + str(LOG2FC_MIN) + "\n")
+    sys.stderr.write("DIFF_METHOD = " + DIFF_METHOD + "\n")
+    return []
+
 rule all:
   input: MERGED_DIFF_COUNTS, DEGS
-
 
 # LOG FUNCTIONS
 def current_date(): 
@@ -317,7 +346,11 @@ rule transcript_to_gene_mapping:
   output: TRANSCRIPT_TO_GENE_MAPPING
   run:
     mapping = open(output[0], 'w')
-    with gzip.open(input[0], 'rt') as f:
+    if(input[0].endswith('.gz')):
+      opener = gzip.open
+    else:
+      opener = open
+    with opener(input[0], 'rt') as f:
       for line in f:
         if line[0] == ">":
           fields = line[1:].split("|",2)
@@ -362,82 +395,17 @@ rule differential_gene_expression:
   input:
     gene_counts = GENE_COUNTS,
     sample_conditions = SAMPLE_CONDITIONS
+  params:
+    condition_col = CONDITION_COL,
+    condition_A = CONDITION_A,
+    condition_B = CONDITION_B
   output:
     differentially_expressed_genes  = DEGS,
     dist_matrix			            = DIST_MATRIX,
     norm_counts		                    = NORMALIZED_COUNTS,
     pca_design			            = PCA_DESIGN
   log : LOGS + "/DESeq2_diff_gene_exp.log"
-  run:
-    R("""
-    library(DESeq2)
-    library(RColorBrewer)
-    library(pheatmap)
-    library(ggplot2)
-
-    write(date(),file="{log}")
-
-    # Load counts data
-    countsData = read.table("{input.gene_counts}",
-                            header=T,
-                            row.names=1,
-			    check.names=FALSE)
-
-    # Load col data with sample specifications
-    colData = read.table("{input.sample_conditions}",
-                         header=T,
-                         row.names=1,
-			 check.names=FALSE)
-
-    write(colnames(countsData),stderr())
-    write(rownames(colData),stderr())
-
-    colData = colData[colnames(countsData),,drop=FALSE]
-
-    # Create DESeq2 object
-    dds <- DESeqDataSetFromMatrix(countData=countsData,
-                                  colData=colData,
-                                  design = ~ {CONDITION_COL})
-    dds <- DESeq(dds)
-
-    #normalized counts
-    NormCount<- as.data.frame(counts(dds, normalized=TRUE ))
-
-    #writing in a file normalized counts
-    normalized_counts<-data.frame(id=row.names(NormCount),NormCount,row.names=NULL)
-    write.table(normalized_counts,file="{output.norm_counts}", sep="\t",row.names=F, col.names=T, quote=F)
-
-    write(resultsNames(dds),stderr())
-
-    # Write DEGs
-    res <- results(dds, contrast = c("{CONDITION_COL}","{CONDITION_A}","{CONDITION_B}"))
-    write.table(res,file="{output.differentially_expressed_genes}",sep="\t",quote=FALSE)
-
-    rld<-rlog(dds)
-    sampleDists<-dist(t(assay(rld) ) )
-    sampleDistMatrix<-as.matrix( sampleDists )
-    rownames(sampleDistMatrix)<-colnames(rld)
-    colnames(sampleDistMatrix)<-colnames(rld)
-    colours=colorRampPalette(rev(brewer.pal(9,"Blues")) )(255)
-
-    pdf("{output.dist_matrix}",width=15,height=10)
-
-    pheatmap(sampleDistMatrix,
-	main="clustering of samples",
-	clustering_distance_rows=sampleDists,
-	clustering_distance_cols=sampleDists,
-	col=colours,
-	fontsize = 14)
-
-    data <- plotPCA(rld,ntop=nrow(rld),returnData=TRUE)
-    write.table(data,"{output.pca_design}",row.names=F, col.names=T, quote=F,sep="\t")
-
-    print(ggplot(data,aes(PC1,PC2,color=condition))+geom_point()+geom_text(aes(label=name),hjust=0,vjust=0))
-
-    dev.off()
-
-    write(date(),file="{log}",append=T)
-    """)
+  script: DESEQ2_REF_TRANSCRIPTS
 
 ###############################################################################
 #
@@ -534,7 +502,10 @@ rule ref_transcript_count:
     options = "-m {KMER_LENGTH} -s 10000 -t {threads} -o {output}"
     if LIB_TYPE == "unstranded":
       options += " -C"
-    shell("{JELLYFISH_COUNT} " + options + " <({ZCAT} {input})")
+    if(input[0].endswith('.gz')):
+      shell("{JELLYFISH_COUNT} " + options + " <({ZCAT} {input})")
+    else:
+      shell("{JELLYFISH_COUNT} " + options + " {input}")
 
 rule ref_transcript_dump:
   input: REF_TRANSCRIPT_FASTA + ".jf"
@@ -602,5 +573,5 @@ rule merge_tags:
       options += " -n"
 
     start_log(log['exec_time'], "merge_tags")
-    shell("{MERGE_TAGS} " + options + " {input.counts} 2>> {log.exec_time} | gzip -c > {output}")
+    shell("{MERGE_TAGS} " + options + " {input.counts} | gzip -c > {output}")
     end_log(log['exec_time'], "merge_tags")

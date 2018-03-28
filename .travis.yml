@@ -1,0 +1,43 @@
+sudo: required
+dist: trusty
+language: python
+python: '3.6'
+cache:
+  directories:
+    - /usr/local/lib/R/site-library
+#r: release
+#r: bioc-devel
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+    packages:
+      - libboost-math-dev
+      - pigz
+      - cmake
+      #- r-base
+      #- r-base-dev
+before_install:
+  # Install latest R version
+  #- sudo add-apt-repository https://cloud.r-project.org/bin/linux/ubuntu trusty/
+  - echo "deb https://cloud.r-project.org/bin/linux/ubuntu trusty/" | sudo tee -a /etc/apt/sources.list
+  - sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E084DAB9
+  - sudo apt-get update
+  - sudo apt-get -y install r-base r-base-dev
+install:
+  # For Ubuntu 12.04, we have only R 2.x available and thus need an older rpy2
+  # version (2.2.5). For Ubuntu 14.04, we have R 3.0.x available which works
+  # with rpy2 2.3.9 (see trusty packages).
+  #- pip install rpy2==2.3.9
+  - pip install rpy2
+  - pip install snakemake
+  # Install all R packages
+  - sudo Rscript install_r_packages.R
+  # Install latest jellyfish version
+  - wget https://github.com/gmarcais/Jellyfish/releases/download/v2.2.9/jellyfish-2.2.9-linux-static
+  - mv jellyfish-2.2.9-linux-static jellyfish
+  - chmod +x jellyfish
+  - export PATH=$PATH:$PWD
+script: 
+  - snakemake --configfile tests/config_ttest.json
+  - snakemake --configfile tests/config_deseq2.json

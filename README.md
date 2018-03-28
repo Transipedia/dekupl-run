@@ -1,4 +1,4 @@
-# dekupl-run
+# dekupl-run [![Build Status](https://travis-ci.org/Transipedia/dekupl-run.svg?branch=master)](https://travis-ci.org/Transipedia/dekupl-run)
 
 DE-kupl is a pipeline that finds differentially expressed k-mers between RNA-Seq datasets under The MIT License.
 
@@ -121,6 +121,8 @@ If you are interested in running a DE-Kupl-style analysis on whole-genome data, 
 
 ## TODO
 
+- When DE-kupl is launched print all options values as they can come from differents places as well as default values
+- Add integration test case with travis-ci for most scenarios (Ttest, DESEQ2, single-end)
 - Create a dekupl binary with two commands :
   - `dekupl build_index {genome}`:
     This command will download reference files and create all indexes

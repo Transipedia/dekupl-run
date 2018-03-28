@@ -1,0 +1,7 @@
+options(repos='http://cran.rstudio.com/')
+install.packages("RColorBrewer")
+install.packages("pheatmap")
+install.packages("foreach")
+install.packages("doParallel")
+source("http://bioconductor.org/biocLite.R")
+biocLite("DESeq2")

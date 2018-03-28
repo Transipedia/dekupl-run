@@ -1,4 +1,4 @@
-# dekupl-run
+# dekupl-run [![Build Status](https://travis-ci.org/Transipedia/dekupl-run.svg?branch=master)](https://travis-ci.org/Transipedia/dekupl-run)
 
 DE-kupl is a pipeline that finds differentially expressed k-mers between RNA-Seq datasets under The MIT License.
 

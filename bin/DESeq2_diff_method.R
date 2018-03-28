@@ -89,7 +89,7 @@ if(chunk_size > 1000000){
 registerDoParallel(cores=nb_core)
 
 # CLEAN THE TMP FOLDER
-system("rm -r ", output_tmp_chunks,sep="")
+system(paste("rm -r ", output_tmp_chunks))
 
 # SAVE THE HEADER INTO A FILE
 system(paste("zcat", no_GENCODE, "| head -1 >", header_no_GENCODE))

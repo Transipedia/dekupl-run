@@ -89,7 +89,7 @@ if(chunk_size > 1000000){
 registerDoParallel(cores=nb_core)
 
 # CLEAN THE TMP FOLDER
-system("rm -r ", output_tmp_chunks,sep="")
+system(paste("rm -r ", output_tmp_chunks, "/*", sep=""))
 
 # SAVE THE HEADER INTO A FILE
 system(paste("zcat", no_GENCODE, "| head -1 >", header_no_GENCODE))
@@ -171,8 +171,15 @@ invisible(foreach(i=1:length(lst_files)) %dopar% {
 
             #RUN DESeq2
             dds <- estimateDispersionsGeneEst(dds)
-            dds <- estimateDispersionsFit(dds)
-            dds <- estimateDispersionsMAP(dds)
+
+            dds <-  tryCatch(
+                             estimateDispersionsMAP(estimateDispersionsFit(dds)),
+                             error=function(e){
+                                 cat("Error during estimateDispersionsFit, probably a '2-order-of-magnitude' message, trying suggested alterative method\n")
+                                 dispersions(dds) <- mcols(dds)$dispGeneEst
+                                 dds
+                             })
+
             dds <- nbinomWaldTest(dds)
             resDESeq2 <- results(dds, pAdjustMethod = "none")
 

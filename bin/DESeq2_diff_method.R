@@ -258,7 +258,7 @@ system(paste("echo -e 'ID\tpvalue' > ", header_adj_pvalue, sep=""))
 
 #LEFT JOIN INTO dataDESeq2All
 #GET ALL THE INFORMATION (ID,MEAN_A,MEAN_B,LOG2FC,COUNTS) FOR DE KMERS
-system(paste("echo \"join <(zcat ", adj_pvalue,") <(zcat ", dataDESeq2All," ) | awk 'function abs(x){return ((x < 0.0) ? -x : x)} {if (abs($5) >=", log2fc_threshold, " && $2 <= ", pvalue_threshold ") print $0}' | tr ' ' '\t' | gzip > ", dataDESeq2Filtered, "\" | bash", sep=""))
+system(paste("echo \"join <(zcat ", adj_pvalue,") <(zcat ", dataDESeq2All," ) | awk 'function abs(x){return ((x < 0.0) ? -x : x)} {if (abs($5) >=", log2fc_threshold, " && $2 <= ", pvalue_threshold, ") print $0}' | tr ' ' '\t' | gzip > ", dataDESeq2Filtered, "\" | bash", sep=""))
 system(paste("rm", adj_pvalue, dataDESeq2All))
 
 logging("Get counts for pvalues that passed the filter")

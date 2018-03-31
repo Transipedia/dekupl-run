@@ -59,13 +59,14 @@ CHUNK_SIZE      = config['chunk_size']  if 'chunk_size'   in config else 1000000
 TMP_DIR         = config['tmp_dir']     if 'tmp_dir'      in config else os.getcwd()
 KMER_LENGTH     = config['kmer_length'] if 'kmer_length'  in config else 31
 DIFF_METHOD     = config['diff_method'] if 'diff_method'  in config else 'DESeq2'
+DATA_TYPE       = config['data_type']   if 'data_type'    in config else 'RNA-Seq'
 FRAG_LENGTH     = config['fragment_length'] if 'fragment_length' in config else 200
 FRAG_STD_DEV    = config['fragment_standard_deviation'] if 'fragment_standard_deviation' in config else 30
 OUTPUT_DIR      = config['output_dir']
 FASTQ_DIR       = config['fastq_dir']
 
 # DIRECTORIES
-BIN_DIR         = "bin"
+BIN_DIR         = workflow.basedir + "/bin"
 TMP_DIR         = temp(TMP_DIR + "/dekupl_tmp")
 GENE_EXP_DIR    = OUTPUT_DIR + "/gene_expression"
 KALLISTO_DIR    = GENE_EXP_DIR + "/kallisto"
@@ -167,8 +168,13 @@ onstart:
     sys.stderr.write("DIFF_METHOD = " + DIFF_METHOD + "\n")
     return []
 
-rule all:
-  input: MERGED_DIFF_COUNTS, DEGS
+if DATA_TYPE == "RNA-Seq": 
+    rule all:
+      input: MERGED_DIFF_COUNTS, DEGS
+else:
+    rule all:
+      input: MERGED_DIFF_COUNTS
+    
 
 # LOG FUNCTIONS
 def current_date(): 
@@ -192,28 +198,28 @@ rule compile_joinCounts:
   output: JOIN_COUNTS
   run:
     shell("cd share/joinCounts && make")
-    shell("ln -s -f ../share/joinCounts/joinCounts bin/")
+    shell("ln -s -f ../share/joinCounts/joinCounts " + BIN_DIR)
 
 rule compile_mergeTags:
   output: MERGE_TAGS
   input: "share/mergeTags/mergeTags.c"
   run:
     shell("cd share/mergeTags && make")
-    shell("ln -s -f ../share/mergeTags/mergeTags bin/")
+    shell("ln -s -f ../share/mergeTags/mergeTags " + BIN_DIR)
 
 rule compile_computeNF:
   output: COMPUTE_NF
   input: "share/computeNF/computeNF.c"
   run:
     shell("cd share/computeNF && make")
-    shell("ln -s -f ../share/computeNF/computeNF bin/")
+    shell("ln -s -f ../share/computeNF/computeNF " + BIN_DIR)
 
 rule compile_TtestFilter:
   input: "share/TtestFilter/TtestFilter.c"
   output: TTEST_FILTER
   run:
     shell("cd share/TtestFilter && make")
-    shell("ln -s -f ../share/TtestFilter/TtestFilter bin/")
+    shell("ln -s -f ../share/TtestFilter/TtestFilter " + BIN_DIR)
 
 rule download_kallisto:
   output:
@@ -222,7 +228,7 @@ rule download_kallisto:
   run:
     shell("wget https://github.com/pachterlab/kallisto/releases/download/v0.43.0/kallisto_linux-v0.43.0.tar.gz -O {output.kallisto_tarball}")
     shell("tar -xzf {output.kallisto_tarball} -C share")
-    shell("ln -s ../share/kallisto_linux-v0.43.0/kallisto bin/kallisto")
+    shell("ln -s ../share/kallisto_linux-v0.43.0/kallisto " + KALLISTO)
 
 
 ###############################################################################
@@ -426,14 +432,17 @@ rule jellyfish_count:
 
     start_log(log['exec_time'], "jellyfish_count (raw counts)")
 
+    r1_pipe = "{ZCAT} {input.r1}" if input.r1.endswith(".gz") else "cat {input.r1}"
+    r2_pipe = "{ZCAT} {input.r2}" if input.r2.endswith(".gz") else "cat {input.r2}"
+
     if LIB_TYPE == "rf":
-      options += " <({ZCAT} {input.r1} | {REVCOMP}) <({ZCAT} {input.r2})"
+      options += " <(%s | {REVCOMP}) <(%s)" % (r1_pipe, r2_pipe)
       shell("echo -e \"R1 is rev comp\n\" >>{log.exec_time}")
     elif LIB_TYPE == "fr":
-      options += " <({ZCAT} {input.r1}) <({ZCAT} {input.r2} | {REVCOMP})"
+      options += " <(%s) <(%s | {REVCOMP})" % (r1_pipe, r2_pipe)
       shell("echo -e \"R2 is rev comp\n\" >>{log.exec_time}")
     elif LIB_TYPE == "unstranded":
-      options += " -C <({ZCAT} {input.r1}) <({ZCAT} {input.r2})"
+      options += " -C <(%s) <(%s)" % (r1_pipe, r2_pipe)
     else:
       sys.exit('Unknown library type')
 
@@ -540,9 +549,9 @@ rule filter_transcript_counts:
 #
 rule test_diff_counts:
   input:
-    counts = MASKED_COUNTS,
+    counts = MASKED_COUNTS if DATA_TYPE == "RNA-Seq" else RAW_COUNTS,
     sample_conditions = SAMPLE_CONDITIONS_FULL,
-    binary = TTEST_FILTER
+    binary = TTEST_FILTER # this is just here to compile T-test. This rule also includes DESeq2 and Poisson tests
   output:
     diff_counts = DIFF_COUNTS,
     pvalue_all  = PVALUE_ALL,

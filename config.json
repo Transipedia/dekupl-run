@@ -5,6 +5,7 @@
   "lib_type": "rf",
   "output_dir":"DEkupl_result",
   "diff_method": "DESeq2",
+  "data_type": "RNA-Seq",
   "chunk_size":1000000,
   "r1_suffix": "_1.fastq.gz",
   "r2_suffix": "_2.fastq.gz",

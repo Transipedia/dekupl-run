@@ -15,13 +15,8 @@ Before using Dekupl-run, install these dependencies:
 - CMake
 - boost
 - R: 
-  * DESEq2 : open R and execute :
-    `> source("https://bioconductor.org/biocLite.R")`
-    `> biocLite("DESeq2")`
-  * RColorBrewer
-  * pheatmap
-  * foreach
-  * doParallel
+  * `Rscript install_r_packages.R`
+  * will install DESEq2, RColorBrewer, pheatmap, foreach, doParallel
 - Python: 
   * rpy2 : `pip3 install rpy2`
 
@@ -113,7 +108,8 @@ FileName | Description
 
 ## Whole-genome data
 
-If you are interested in running a DE-Kupl-style analysis on whole-genome data, i.e. without using a reference transcriptome, please use [this branch](https://github.com/Transipedia/dekupl-run/tree/wgs).
+It is now possible to run DE-kupl-style analysis on whole-genome data, i.e. without using a reference transcriptome.
+To do so, please change `data_type` to `WGS` in `config.json`.
 
 ## FAQ
 - if new samples are added to the config.json, make sure to remove the `metadata` folder in order to force SnakeMake to re-make all targets that depends on this file

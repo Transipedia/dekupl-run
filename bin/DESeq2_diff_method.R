@@ -89,7 +89,7 @@ if(chunk_size > 1000000){
 registerDoParallel(cores=nb_core)
 
 # CLEAN THE TMP FOLDER
-system(paste("rm -r ", output_tmp_chunks, "/*", sep=""))
+system(paste("rm -f ", output_tmp_chunks, "/*", sep=""))
 
 # SAVE THE HEADER INTO A FILE
 system(paste("zcat", no_GENCODE, "| head -1 >", header_no_GENCODE))
@@ -244,12 +244,12 @@ adjPvalue         = p.adjust(as.numeric(as.character(pvalueAll[,"pvalue"])),"BH"
 adjPvalue_dataframe = data.frame(ID=pvalueAll$ID,
                                  pvalue=adjPvalue)
 
-logging(paste("Removing k-mer with pvalue >",pvalue_threshold,"and abs(log2FC) <",log2fc_threshold))
-logging(str(adjPvalue_dataframe))
-
-adjPvalue_dataframe = subset(adjPvalue_dataframe, pvalue <= pvalue_threshold)
-
-adjPvalue_dataframe = na.omit(adjPvalue_dataframe)
+#logging(paste("Removing k-mer with pvalue >",pvalue_threshold,"and abs(log2FC) <",log2fc_threshold))
+#logging(str(adjPvalue_dataframe))
+#
+#adjPvalue_dataframe = subset(adjPvalue_dataframe, pvalue <= pvalue_threshold)
+#
+#adjPvalue_dataframe = na.omit(adjPvalue_dataframe)
 
 write.table(adjPvalue_dataframe,
             file=gzfile(adj_pvalue),
@@ -265,7 +265,7 @@ system(paste("echo -e 'ID\tpvalue' > ", header_adj_pvalue, sep=""))
 
 #LEFT JOIN INTO dataDESeq2All
 #GET ALL THE INFORMATION (ID,MEAN_A,MEAN_B,LOG2FC,COUNTS) FOR DE KMERS
-system(paste("join <(zcat ", adj_pvalue,") <(zcat ", dataDESeq2All," ) | awk 'function abs(x){return ((x < 0.0) ? -x : x)} {if (abs($5) >=", log2fc_threshold, ") print $0}' | tr ' ' '\t' | gzip > ", dataDESeq2Filtered,sep=""))
+system(paste("echo \"join <(zcat ", adj_pvalue,") <(zcat ", dataDESeq2All," ) | awk 'function abs(x){return ((x < 0.0) ? -x : x)} {if (abs(\\$5) >=", log2fc_threshold, " && \\$2 <= ", pvalue_threshold, ") print \\$0}' | tr ' ' '\t' | gzip > ", dataDESeq2Filtered, "\" | bash", sep=""))
 system(paste("rm", adj_pvalue, dataDESeq2All))
 
 logging("Get counts for pvalues that passed the filter")

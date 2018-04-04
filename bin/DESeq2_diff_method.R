@@ -227,7 +227,7 @@ logging(paste("DESeq2 results merged into",dataDESeq2All))
 system(paste("rm -rf", output_tmp_DESeq2))
 
 # CREATE THE HEADER FOR THE DESeq2 TABLE RESULT
-system(paste("echo -e 'ID\tmeanA\tmeanB\tlog2FC' | paste - ", header_no_GENCODE," > ", header_dataDESeq2All, sep=""))
+system(paste("echo 'ID\tmeanA\tmeanB\tlog2FC' | paste - ", header_no_GENCODE," > ", header_dataDESeq2All, sep=""))
 
 #CREATE AND WRITE THE ADJUSTED PVALUE UNDER THRESHOLD WITH THEIR ID
 pvalueAll         = read.table(output_pvalue_all, header=F, stringsAsFactors=F)
@@ -254,7 +254,7 @@ write.table(adjPvalue_dataframe,
 logging("Pvalues are adjusted")
 
 #SAVE THE HEADER
-system(paste("echo -e 'ID\tpvalue' > ", header_adj_pvalue, sep=""))
+system(paste("echo 'ID\tpvalue' > ", header_adj_pvalue, sep=""))
 
 #LEFT JOIN INTO dataDESeq2All
 #GET ALL THE INFORMATION (ID,MEAN_A,MEAN_B,LOG2FC,COUNTS) FOR DE KMERS

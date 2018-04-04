@@ -50,12 +50,9 @@ output_tmp_chunks         = paste(output_tmp,"/tmp_chunks/",sep="")
 output_tmp_DESeq2         = paste(output_tmp,"/tmp_DESeq2/",sep="")
 header_no_GENCODE         = paste(output_tmp,"/header_no_GENCODE.txt",sep="")
 tmp_concat                = paste(output_tmp,"/tmp_concat.txt",sep="")
-header_adj_pvalue         = paste(output_tmp,"/header_adj_pvalue.txt",sep="")
 adj_pvalue                = paste(output_tmp,"/adj_pvalue.txt.gz",sep="")
 dataDESeq2All             = paste(output_tmp,"/dataDESeq2All.txt.gz",sep="")
-header_dataDESeq2All      = paste(output_tmp,"/header_dataDESeq2All.txt",sep="")
 dataDESeq2Filtered        = paste(output_tmp,"/dataDESeq2Filtered.txt.gz",sep="")
-final_header_tmp          = paste(output_tmp,"/final_header_tmp.txt.gz",sep="")
 
 # Create directories
 dir.create(output_tmp, showWarnings = FALSE)
@@ -92,7 +89,7 @@ registerDoParallel(cores=nb_core)
 system(paste("rm -f ", output_tmp_chunks, "/*", sep=""))
 
 # SAVE THE HEADER INTO A FILE
-system(paste("zcat", no_GENCODE, "| head -1 >", header_no_GENCODE))
+system(paste("zcat", no_GENCODE, "| head -1 | cut -f2- >", header_no_GENCODE))
 
 # SHUFFLE AND SPLIT THE MAIN FILE INTO CHUNKS WITH AUTOINCREMENTED NAMES
 system(paste("zcat", no_GENCODE, "| tail -n +2 | shuf | awk -v", paste("chunk_size=", chunk_size,sep=""), "-v", paste("output_tmp_chunks=",output_tmp_chunks,sep=""),
@@ -147,7 +144,7 @@ invisible(foreach(i=1:length(lst_files)) %dopar% {
             rownames(bigTab)=bigTab[,1]
             #REMOVE THE TAG AS A COLUMN
             bigTab=bigTab[,2:ncol(bigTab)]
-            names(bigTab)=header[2:length(header)]
+            names(bigTab)=header
 
             countData = as.matrix(bigTab)
 
@@ -233,23 +230,13 @@ logging(paste("DESeq2 results merged into",dataDESeq2All))
 # REMOVE DESeq2 CHUNKS RESULTS
 system(paste("rm -rf", output_tmp_DESeq2))
 
-# CREATE THE HEADER FOR THE DESeq2 TABLE RESULT
-system(paste("echo -e 'ID\tmeanA\tmeanB\tlog2FC' | paste - ", header_no_GENCODE," > ", header_dataDESeq2All, sep=""))
-
 #CREATE AND WRITE THE ADJUSTED PVALUE UNDER THRESHOLD WITH THEIR ID
 pvalueAll         = read.table(output_pvalue_all, header=F, stringsAsFactors=F)
-names(pvalueAll)  = c("ID","pvalue")
+names(pvalueAll)  = c("tag","pvalue")
 adjPvalue         = p.adjust(as.numeric(as.character(pvalueAll[,"pvalue"])),"BH")
 
-adjPvalue_dataframe = data.frame(ID=pvalueAll$ID,
+adjPvalue_dataframe = data.frame(tag=pvalueAll$tag,
                                  pvalue=adjPvalue)
-
-#logging(paste("Removing k-mer with pvalue >",pvalue_threshold,"and abs(log2FC) <",log2fc_threshold))
-#logging(str(adjPvalue_dataframe))
-#
-#adjPvalue_dataframe = subset(adjPvalue_dataframe, pvalue <= pvalue_threshold)
-#
-#adjPvalue_dataframe = na.omit(adjPvalue_dataframe)
 
 write.table(adjPvalue_dataframe,
             file=gzfile(adj_pvalue),
@@ -260,9 +247,6 @@ write.table(adjPvalue_dataframe,
 
 logging("Pvalues are adjusted")
 
-#SAVE THE HEADER
-system(paste("echo -e 'ID\tpvalue' > ", header_adj_pvalue, sep=""))
-
 #LEFT JOIN INTO dataDESeq2All
 #GET ALL THE INFORMATION (ID,MEAN_A,MEAN_B,LOG2FC,COUNTS) FOR DE KMERS
 system(paste("echo \"join <(zcat ", adj_pvalue,") <(zcat ", dataDESeq2All," ) | awk 'function abs(x){return ((x < 0.0) ? -x : x)} {if (abs(\\$5) >=", log2fc_threshold, " && \\$2 <= ", pvalue_threshold, ") print \\$0}' | tr ' ' '\t' | gzip > ", dataDESeq2Filtered, "\" | bash", sep=""))
@@ -271,8 +255,11 @@ system(paste("rm", adj_pvalue, dataDESeq2All))
 logging("Get counts for pvalues that passed the filter")
 
 #CREATE THE FINAL HEADER USING ADJ_PVALUE AND DATADESeq2ALL ONES AND COMPRESS THE FILE
-system(paste("paste", header_adj_pvalue, header_dataDESeq2All, "| gzip >", final_header_tmp))
-system(paste("zcat", final_header_tmp, dataDESeq2Filtered, "| gzip > ", output_diff_counts))
+# CREATE THE HEADER FOR THE DESeq2 TABLE RESULT
+
+#SAVE THE HEADER
+system(paste("echo 'tag\tpvalue\tmeanA\tmeanB\tlog2FC' | paste - ", header_no_GENCODE," | gzip > ", output_diff_counts))
+system(paste("cat", dataDESeq2Filtered, ">>", output_diff_counts))
 system(paste("rm", dataDESeq2Filtered))
 
 logging("Analysis done")

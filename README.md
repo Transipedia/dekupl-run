@@ -50,7 +50,7 @@ Either use the Docker container (updated daily, https://hub.docker.com/r/ebio/de
   * *min_recurrence*: Minimum number of samples to support a k-mer
   * *min_recurrence_abundance*: Min abundance threshold to consider a k-mer in
     the reccurency filter.
-- **Ttest**:
+- **diff_analysis**:
   * *condition*: Specify A and B conditions.
   * *pvalue_threshold*: Min p-value (adjusted) to consider a k-mer as DE. Only
     DE k-mers are selected for assembly.

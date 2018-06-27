@@ -1,0 +1,6 @@
+.vscode
+.snakemake
+bin/mergeTags
+bin/TtestFilter
+bin/computeNF
+bin/joinCounts

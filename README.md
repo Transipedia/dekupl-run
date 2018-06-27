@@ -61,6 +61,7 @@ Either use the Docker container (updated daily, https://hub.docker.com/r/ebio/de
     `fastq_dir/sample_name_{1,2}.fastq.gz`
 - **transcript_fasta**: The reference transcriptome to be used for masking. By default DEKupl-run uses the human Gencode transcriptome for masking. To change this, add to the config.json file:
 `"transcript_fasta":my_transciptome.fa`
+- **transcript_to_gene**: This is a two column tabulated file, with the transcript ID in the first column and the gene ID in the second column. The file is not mandatory if the FASTA transcriptome is from Gencode, were the gene ID can be extracted from the sequence names in the FASTA. An example of this file can be found here : [tests/gencode.v24.transcripts.head1000.mapping.tsv](tests/gencode.v24.transcripts.head1000.mapping.tsv).
 
 ### Configuration for single-end libraries
 
@@ -114,6 +115,7 @@ To do so, please change `data_type` to `WGS` in `config.json`.
 ## FAQ
 - if new samples are added to the config.json, make sure to remove the `metadata` folder in order to force SnakeMake to re-make all targets that depends on this file
 - Snakemake uses Rscript, not R. If a R module is not installed, type `which Rscript` and `which R` and make sure they point to the same installation of R.
+- For OSX support you need to install the coreutils package with HomeBrew `brew install coreutils`. This package provide Linux versions of famus Unix command like "sort", "join", etc.
 
 ## TODO
 

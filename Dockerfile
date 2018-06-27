@@ -40,7 +40,7 @@ RUN apt-get update \
   && rm -rf /tmp/downloaded_packages/ /tmp/*.rds \
 && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /root
+WORKDIR /dekupl
 COPY install_r_packages.R .
 RUN Rscript install_r_packages.R
 
@@ -50,20 +50,18 @@ RUN pip install snakemake rpy2
 COPY bin bin
 COPY share share
 
-RUN cd share/computeNF && make && cp computeNF /root/bin/
-RUN cd share/joinCounts && make && cp joinCounts /root/bin/
-RUN cd share/mergeTags && make && cp mergeTags /root/bin/
+RUN cd share/computeNF && make && cp computeNF /dekupl/bin/
+RUN cd share/joinCounts && make && cp joinCounts /dekupl/bin/
+RUN cd share/mergeTags && make && cp mergeTags /dekupl/bin/
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
   libboost-all-dev \
-  && cd share/TtestFilter && make && cp TtestFilter /root/bin/ \
+  && cd share/TtestFilter && make && cp TtestFilter /dekupl/bin/ \
   && rm -rf /var/lib/apt/lists/*
-
 RUN cd share \
   && wget https://github.com/pachterlab/kallisto/releases/download/v0.43.0/kallisto_linux-v0.43.0.tar.gz -O kallisto.tar.gz \
   && tar -xzf kallisto.tar.gz \
-  && cp kallisto_linux-v0.43.0/kallisto /root/bin
-
+  && cp kallisto_linux-v0.43.0/kallisto /dekupl/bin
 RUN rm -rf share
 
 COPY Snakefile .

@@ -193,42 +193,51 @@ def end_log(log_file, rule_name):
 ###############################################################################
 #
 # SOFTWARE INSTALLATION
-#
-# rule compile_joinCounts:
-#   output: JOIN_COUNTS
-#   run:
-#     shell("cd share/joinCounts && make")
-#     shell("ln -s -f ../share/joinCounts/joinCounts " + BIN_DIR)
 
-# rule compile_mergeTags:
-#   output: MERGE_TAGS
-#   input: "share/mergeTags/mergeTags.c"
-#   run:
-#     shell("cd share/mergeTags && make")
-#     shell("ln -s -f ../share/mergeTags/mergeTags " + BIN_DIR)
+rule compile_joinCounts:
+  output: JOIN_COUNTS
+  run:
+    if not os.path.isfile(BIN_DIR + JOIN_COUNTS):
+      shell("cd share/joinCounts && make")
+      shell("ln -s -f ../share/joinCounts/joinCounts " + BIN_DIR)
 
-# rule compile_computeNF:
-#   output: COMPUTE_NF
-#   input: "share/computeNF/computeNF.c"
-#   run:
-#     shell("cd share/computeNF && make")
-#     shell("ln -s -f ../share/computeNF/computeNF " + BIN_DIR)
+rule compile_mergeTags:
+  output: MERGE_TAGS
+  input: "share/mergeTags/mergeTags.c"
+  run:
+    if not os.path.isfile(BIN_DIR + MERGE_TAGS):
+      shell("cd share/mergeTags && make")
+      shell("ln -s -f ../share/mergeTags/mergeTags " + BIN_DIR)
 
-# rule compile_TtestFilter:
-#   input: "share/TtestFilter/TtestFilter.c"
-#   output: TTEST_FILTER
-#   run:
-#     shell("cd share/TtestFilter && make")
-#     shell("ln -s -f ../share/TtestFilter/TtestFilter " + BIN_DIR)
 
-# rule download_kallisto:
-#   output:
-#     kallisto_symlink = KALLISTO,
-#     kallisto_tarball = temp("share/kallisto.tar.gz")
-#   run:
-#     shell("wget https://github.com/pachterlab/kallisto/releases/download/v0.43.0/kallisto_linux-v0.43.0.tar.gz -O {output.kallisto_tarball}")
-#     shell("tar -xzf {output.kallisto_tarball} -C share")
-#     shell("ln -s ../share/kallisto_linux-v0.43.0/kallisto " + KALLISTO)
+rule compile_computeNF:
+  output: COMPUTE_NF
+  input: "share/computeNF/computeNF.c"
+  run:
+    if not os.path.isfile(BIN_DIR + COMPUTE_NF):
+      shell("cd share/computeNF && make")
+      shell("ln -s -f ../share/computeNF/computeNF " + BIN_DIR)
+
+
+rule compile_TtestFilter:
+  input: "share/TtestFilter/TtestFilter.c"
+  output: TTEST_FILTER
+  run:
+    if not os.path.isfile(BIN_DIR + TTEST_FILTER):
+      shell("cd share/TtestFilter && make")
+      shell("ln -s -f ../share/TtestFilter/TtestFilter " + BIN_DIR)
+
+
+rule download_kallisto:
+  output:
+    kallisto_symlink = KALLISTO,
+    kallisto_tarball = temp("share/kallisto.tar.gz")
+  run:
+    if not os.path.isfile(BIN_DIR + KALLISTO):
+      shell("wget https://github.com/pachterlab/kallisto/releases/download/v0.43.0/kallisto_linux-v0.43.0.tar.gz -O {output.kallisto_tarball}")
+      shell("tar -xzf {output.kallisto_tarball} -C share")
+      shell("ln -s ../share/kallisto_linux-v0.43.0/kallisto " + KALLISTO)
+
 
 
 ###############################################################################

@@ -30,6 +30,7 @@ import os
 import gzip
 import datetime
 from snakemake.utils import R
+from sys import platform
 
 __author__ = "Jérôme Audoux (jerome.audoux@inserm.fr)"
 
@@ -87,10 +88,10 @@ ASSEMBLIES_FASTA            = KMER_DE_DIR   + "/merged-diff-counts.fa.gz"
 ASSEMBLIES_BAM              = KMER_DE_DIR   + "/merged-diff-counts.bam"
 SAMPLE_CONDITIONS           = METADATA_DIR  + "/sample_conditions.tsv"
 SAMPLE_CONDITIONS_FULL      = METADATA_DIR  + "/sample_conditions_full.tsv"
-default_file                = "".join(REFERENCE_DIR + "/gencode.v24.transcripts.fa.gz")
-REF_TRANSCRIPT_FASTA        = config['transcript_fasta'] if 'transcript_fasta' in config else default_file
+DEFAULT_TRANSCRIPTS         = "".join(REFERENCE_DIR + "/gencode.v24.transcripts.fa.gz")
+REF_TRANSCRIPT_FASTA        = config['transcript_fasta'] if 'transcript_fasta' in config else DEFAULT_TRANSCRIPTS
 REF_TRANSCRIPT_COUNTS       = REFERENCE_DIR + "/" + getbasename(REF_TRANSCRIPT_FASTA) + ".tsv.gz"
-TRANSCRIPT_TO_GENE_MAPPING  = REFERENCE_DIR + "/transcript_to_gene_mapping.tsv"
+TRANSCRIPT_TO_GENE_MAPPING  = config['transcript_to_gene'] if 'transcript_to_gene' in config else REFERENCE_DIR + "/transcript_to_gene_mapping.tsv"
 KALLISTO_INDEX              = REFERENCE_DIR + "/" + getbasename(REF_TRANSCRIPT_FASTA) + "-kallisto.idx"
 TRANSCRIPT_COUNTS           = KALLISTO_DIR  + "/transcript_counts.tsv.gz"
 GENE_COUNTS                 = KALLISTO_DIR  + "/gene_counts.tsv.gz"
@@ -117,6 +118,11 @@ JELLYFISH_DUMP          = JELLYFISH + " dump"
 PIGZ                    = "pigz"
 ZCAT                    = "gunzip -c"
 SORT                    = "sort"
+JOIN                    = "join"
+
+if platform == "darwin":
+    SORT = "gsort"
+    JOIN = "gjoin"
 
 # SET MEMORY/THREAD USAGE FOR EACH RULE
 MAX_MEM_KALLISTO  = 4000
@@ -154,7 +160,9 @@ onstart:
     sys.stderr.write("***************** PARAMETERS ******************\n")
 
     sys.stderr.write("\n* General\n")
-    sys.stderr.write("KMER_LENGTH = " + str(KMER_LENGTH) + "\n")
+    sys.stderr.write("KMER_LENGTH                   = " + str(KMER_LENGTH) + "\n")
+    sys.stderr.write("REF_TRANSCRIPT_FASTA          = " + str(REF_TRANSCRIPT_FASTA) + "\n")
+    sys.stderr.write("TRANSCRIPT_TO_GENE_MAPPING    = " + str(TRANSCRIPT_TO_GENE_MAPPING) + "\n")
 
     sys.stderr.write("\n* K-mer counting\n")
     sys.stderr.write("MIN_REC     = " + str(MIN_REC) + "\n")
@@ -287,7 +295,7 @@ rule sample_conditions_full:
   input:
     sample_conditions     = SAMPLE_CONDITIONS,
     normalization_factors  = NORMALIZATION_FACTORS
-  shell: "join --header {input.sample_conditions} {input.normalization_factors} > {output}"
+  shell: "{JOIN} --header {input.sample_conditions} {input.normalization_factors} > {output}"
 
 
 ##############################################################################

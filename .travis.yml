@@ -46,6 +46,6 @@ script:
   - snakemake --configfile tests/config_deseq2.json
 deploy:
   provider: script
-  script: bash docker_push
+  script: bash scripts/delivery.sh
   on:
     branch: master

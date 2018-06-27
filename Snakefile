@@ -6,24 +6,24 @@
 # Copyright (c) 2017, Jérôme Audoux (jerome.audoux@inserm.fr)
 #
 # Permission is hereby granted, free of charge, to any person obtaining
-# a copy of this software and associated documentation files 
-# (the “Software”), to deal in the Software without restriction, 
+# a copy of this software and associated documentation files
+# (the “Software”), to deal in the Software without restriction,
 # including without limitation the rights to use, copy, modify, merge,
 # publish, distribute, sublicense, and/or sell copies of the Software,
-# and to permit persons to whom the Software is furnished to do so, 
+# and to permit persons to whom the Software is furnished to do so,
 # subject to the following conditions:
 #
-# The above copyright notice and this permission notice shall be 
+# The above copyright notice and this permission notice shall be
 # included in all copies or substantial portions of the Software.
 #
-# The Software is provided “as is”, without warranty of any kind, 
-# express or implied, including but not limited to the warranties of 
-# merchantability, fitness for a particular purpose and 
+# The Software is provided “as is”, without warranty of any kind,
+# express or implied, including but not limited to the warranties of
+# merchantability, fitness for a particular purpose and
 # noninfringement. In no event shall the authors or copyright holders
-# be liable for any claim, damages or other liability, whether in an 
-# action of contract, tort or otherwise, arising from, out of or in 
-# connection with the software or the use or other dealings in the 
-# Software. 
+# be liable for any claim, damages or other liability, whether in an
+# action of contract, tort or otherwise, arising from, out of or in
+# connection with the software or the use or other dealings in the
+# Software.
 #######################################################################
 
 import os
@@ -123,7 +123,7 @@ MAX_MEM_KALLISTO  = 4000
 MAX_MEM_JELLYFISH = 8000
 MAX_MEM_SORT      = 3000
 
-MAX_CPU           = 1000 
+MAX_CPU           = 1000
 MAX_CPU_JELLYFISH = 10
 MAX_CPU_SORT      = 10
 
@@ -147,8 +147,8 @@ onstart:
               / /\ /_\ | |/ / | | | '_ \| |
              / /_///__ |   <| |_| | |_) | |
             /___,'\__/ |_|\_\\\__,_| .__/|_|
-                                  |_|      
-    
+                                  |_|
+
     """)
 
     sys.stderr.write("***************** PARAMETERS ******************\n")
@@ -168,16 +168,16 @@ onstart:
     sys.stderr.write("DIFF_METHOD = " + DIFF_METHOD + "\n")
     return []
 
-if DATA_TYPE == "RNA-Seq": 
+if DATA_TYPE == "RNA-Seq":
     rule all:
       input: MERGED_DIFF_COUNTS, DEGS
 else:
     rule all:
       input: MERGED_DIFF_COUNTS
-    
+
 
 # LOG FUNCTIONS
-def current_date(): 
+def current_date():
     return datetime.datetime.now().strftime("%d %B %Y, %H:%M:%S")
 
 def start_log(log_file, rule_name):
@@ -194,41 +194,41 @@ def end_log(log_file, rule_name):
 #
 # SOFTWARE INSTALLATION
 #
-rule compile_joinCounts:
-  output: JOIN_COUNTS
-  run:
-    shell("cd share/joinCounts && make")
-    shell("ln -s -f ../share/joinCounts/joinCounts " + BIN_DIR)
+# rule compile_joinCounts:
+#   output: JOIN_COUNTS
+#   run:
+#     shell("cd share/joinCounts && make")
+#     shell("ln -s -f ../share/joinCounts/joinCounts " + BIN_DIR)
 
-rule compile_mergeTags:
-  output: MERGE_TAGS
-  input: "share/mergeTags/mergeTags.c"
-  run:
-    shell("cd share/mergeTags && make")
-    shell("ln -s -f ../share/mergeTags/mergeTags " + BIN_DIR)
+# rule compile_mergeTags:
+#   output: MERGE_TAGS
+#   input: "share/mergeTags/mergeTags.c"
+#   run:
+#     shell("cd share/mergeTags && make")
+#     shell("ln -s -f ../share/mergeTags/mergeTags " + BIN_DIR)
 
-rule compile_computeNF:
-  output: COMPUTE_NF
-  input: "share/computeNF/computeNF.c"
-  run:
-    shell("cd share/computeNF && make")
-    shell("ln -s -f ../share/computeNF/computeNF " + BIN_DIR)
+# rule compile_computeNF:
+#   output: COMPUTE_NF
+#   input: "share/computeNF/computeNF.c"
+#   run:
+#     shell("cd share/computeNF && make")
+#     shell("ln -s -f ../share/computeNF/computeNF " + BIN_DIR)
 
-rule compile_TtestFilter:
-  input: "share/TtestFilter/TtestFilter.c"
-  output: TTEST_FILTER
-  run:
-    shell("cd share/TtestFilter && make")
-    shell("ln -s -f ../share/TtestFilter/TtestFilter " + BIN_DIR)
+# rule compile_TtestFilter:
+#   input: "share/TtestFilter/TtestFilter.c"
+#   output: TTEST_FILTER
+#   run:
+#     shell("cd share/TtestFilter && make")
+#     shell("ln -s -f ../share/TtestFilter/TtestFilter " + BIN_DIR)
 
-rule download_kallisto:
-  output:
-    kallisto_symlink = KALLISTO,
-    kallisto_tarball = temp("share/kallisto.tar.gz")
-  run:
-    shell("wget https://github.com/pachterlab/kallisto/releases/download/v0.43.0/kallisto_linux-v0.43.0.tar.gz -O {output.kallisto_tarball}")
-    shell("tar -xzf {output.kallisto_tarball} -C share")
-    shell("ln -s ../share/kallisto_linux-v0.43.0/kallisto " + KALLISTO)
+# rule download_kallisto:
+#   output:
+#     kallisto_symlink = KALLISTO,
+#     kallisto_tarball = temp("share/kallisto.tar.gz")
+#   run:
+#     shell("wget https://github.com/pachterlab/kallisto/releases/download/v0.43.0/kallisto_linux-v0.43.0.tar.gz -O {output.kallisto_tarball}")
+#     shell("tar -xzf {output.kallisto_tarball} -C share")
+#     shell("ln -s ../share/kallisto_linux-v0.43.0/kallisto " + KALLISTO)
 
 
 ###############################################################################
@@ -276,7 +276,7 @@ rule compute_normalization_factors:
   input:
     raw_counts = RAW_COUNTS,
     binary = COMPUTE_NF
-  output: 
+  output:
     nf      = NORMALIZATION_FACTORS
   log: LOGS + "/compute_norm_factors.log"
   shell: "{COMPUTE_NF} {input.raw_counts} > {output.nf} 2> {log}"

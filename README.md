@@ -46,7 +46,7 @@ docker run --rm -v ${PWD}my-config.json:/dekupl/my-config.json -v ${PWD}/data:/d
 singularity build --sandbox dekupl-run.img docker://transipedia/dekupl-run
 singularity run ./dekupl-run.img --configfile my-config.json -jNB_THREADS --resources ram=MAX_MEMORY -p
 ```
-You don't need to mount any volumes with singularity.
+You don't need to mount any volumes with singularity, but you must have your config.json and your inputs file in the directory where you are running dekupl-run.
 
 ### Build and run yourself
 

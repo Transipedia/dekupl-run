@@ -1,6 +1,8 @@
 sudo: required
 dist: trusty
 language: python
+services:
+  - docker
 python: '3.6'
 cache:
   directories:
@@ -38,7 +40,12 @@ install:
   - mv jellyfish-2.2.9-linux-static jellyfish
   - chmod +x jellyfish
   - export PATH=$PATH:$PWD
-script: 
+script:
   - snakemake --configfile tests/config_transcript_to_gene_mapping.json
   - snakemake --configfile tests/config_ttest.json
   - snakemake --configfile tests/config_deseq2.json
+deploy:
+  provider: script
+  script: bash scripts/delivery.sh
+  on:
+    branch: master

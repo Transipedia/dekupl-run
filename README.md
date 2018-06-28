@@ -14,15 +14,41 @@ Before using Dekupl-run, install these dependencies:
 - pigz
 - CMake
 - boost
-- R: 
+- R:
   * `Rscript install_r_packages.R`
   * will install DESEq2, RColorBrewer, pheatmap, foreach, doParallel
-- Python: 
+- Python:
   * rpy2 : `pip3 install rpy2`
 
 ## Installation and usage
 
-Either use the Docker container (updated daily, https://hub.docker.com/r/ebio/dekupl/), or:
+Either use the Docker container of the full dekupl pipeline (updated daily, https://hub.docker.com/r/ebio/dekupl/), or:
+
+### Run dekupl-run with docker
+#### Pull
+```
+docker pull transipedia/dekupl-run
+```
+#### Run
+You may need to mount some volumes :
+- Your `my-config.json` to `/dekupl/my-config.json`
+- Your fastq_dir (the one defined in your `config.json`) to `/dekupl/FASTQ_DIR`
+- Your output_dir (the one defined in your `config.json`) to `/dekupl/OUTPUT_DIR`
+- Any other necessary folder depending on your `config.json`
+
+#### Example
+ ```
+docker run --rm -v ${PWD}my-config.json:/dekupl/my-config.json -v ${PWD}/data:/dekupl/data  -v ${PWD}/results:/dekupl/results transipedia/dekupl-run --configfile my-config.json  -jNB_THREADS --resources ram=MAX_MEMORY -p
+```
+
+### Run dekupl-run with singularity
+```
+singularity build --sandbox dekupl-run.img docker://transipedia/dekupl-run
+singularity run ./dekupl-run.img --configfile my-config.json -jNB_THREADS --resources ram=MAX_MEMORY -p
+```
+You don't need to mount any volumes with singularity, but you must have your config.json and your inputs file in the directory where you are running dekupl-run.
+
+### Build and run yourself
 
 1. Clone this repository including submodules : `git clone --recursive https://github.com/Transipedia/dekupl-run.git`
 2. Install dependencies above

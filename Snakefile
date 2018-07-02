@@ -391,7 +391,7 @@ rule gene_counts:
       header = f.readline().rstrip()
       for line in f:
         counts = line.split()
-        transcript_id, trail = counts[0].split("|",1)
+        transcript_id = counts[0].split("|",1)[0]
         gene_id = conversion_hash[transcript_id]
         counts[1:] = [ float(i) for i in counts[1:] ]
         if gene_id in gene_counts:

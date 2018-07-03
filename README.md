@@ -17,8 +17,6 @@ Before using Dekupl-run, install these dependencies:
 - R:
   * `Rscript install_r_packages.R`
   * will install DESEq2, RColorBrewer, pheatmap, foreach, doParallel
-- Python:
-  * rpy2 : `pip3 install rpy2`
 
 ## Installation and usage
 

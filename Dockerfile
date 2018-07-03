@@ -44,9 +44,6 @@ WORKDIR /dekupl
 COPY install_r_packages.R .
 RUN Rscript install_r_packages.R
 
-# Python
-RUN pip install snakemake rpy2
-
 COPY bin bin
 COPY share share
 

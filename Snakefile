@@ -604,9 +604,11 @@ rule test_diff_counts:
         {params.log2fc_threshold} \
         {params.conditionA} \
         {params.conditionB} \
+        {threads} \
+        {params.chunk_size} \
+        {output.tmp_dir} \
         {output.diff_counts} \
         {output.pvalue_all} \
-        {output.tmp_dir} \
         {log}
         """
 

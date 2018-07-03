@@ -29,21 +29,24 @@ library("foreach")
 library("doParallel")
 library("DESeq2")
 
-# Get parameters for the test
-no_GENCODE                = snakemake@input$counts
-sample_conditions         = snakemake@input$sample_conditions
-pvalue_threshold          = snakemake@params$pvalue_threshold
-log2fc_threshold          = snakemake@params$log2fc_threshold
-conditionA                = snakemake@params$conditionA
-conditionB                = snakemake@params$conditionB
-nb_core                   = snakemake@threads
-chunk_size                = snakemake@params$chunk_size
+args <- commandArgs(TRUE)
 
-# Get output files
-output_tmp          = snakemake@output$tmp_dir
-output_diff_counts  = snakemake@output$diff_counts
-output_pvalue_all   = snakemake@output$pvalue_all
-output_log          = snakemake@log[[1]]
+# Get parameters for the test
+binary                    = args[1]#snakemake@input$binary
+kmer_counts               = args[2]#snakemake@input$counts
+sample_conditions         = args[3]#snakemake@input$sample_conditions
+pvalue_threshold          = args[4]#snakemake@params$pvalue_threshold
+log2fc_threshold          = args[5]#snakemake@params$log2fc_threshold
+conditionA                = args[6]#snakemake@params$conditionA
+conditionB                = args[7]#snakemake@params$conditionB
+nb_core                   = args[8]#snakemake@threads
+chunk_size                = args[9]#snakemake@params$chunk_size
+
+# Get output files  
+output_tmp                = args[10]#snakemake@output$tmp_dir
+output_diff_counts        = args[11]#snakemake@output$diff_counts
+output_pvalue_all         = args[12]#snakemake@output$pvalue_all
+output_log                = args[13]#snakemake@log[[1]]
 
 # Temporary files
 output_tmp_chunks         = paste(output_tmp,"/tmp_chunks/",sep="")
@@ -92,7 +95,7 @@ system(paste("rm -f ", output_tmp_chunks, "/*", sep=""))
 system(paste("zcat", no_GENCODE, "| head -1 | cut -f2- >", header_no_GENCODE))
 
 # SHUFFLE AND SPLIT THE MAIN FILE INTO CHUNKS WITH AUTOINCREMENTED NAMES
-system(paste("zcat", no_GENCODE, "| tail -n +2 | shuf | awk -v", paste("chunk_size=", chunk_size,sep=""), "-v", paste("output_tmp_chunks=",output_tmp_chunks,sep=""),
+system(paste("zcat", kmer_counts, "| tail -n +2 | shuf | awk -v", paste("chunk_size=", chunk_size,sep=""), "-v", paste("output_tmp_chunks=",output_tmp_chunks,sep=""),
              "'NR%chunk_size==1{OFS=\"\\t\";x=++i\"_subfile.txt.gz\"}{OFS=\"\";print | \"gzip >\" output_tmp_chunks x}'"))
 
 logging("Shuffle and split done")

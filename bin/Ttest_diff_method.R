@@ -26,18 +26,23 @@
 
 args <- commandArgs(TRUE)
 
-Ttest                     = args[1]#snakemake@input$binary
-no_GENCODE                = args[2]#snakemake@input$counts
-normalization_factor_path = args[3]#snakemake@input$sample_conditions
+# Get parameters for the test
+binary                    = args[1]#snakemake@input$binary
+kmer_counts               = args[2]#snakemake@input$counts
+sample_conditions         = args[3]#snakemake@input$sample_conditions
 pvalue_threshold          = args[4]#snakemake@params$pvalue_threshold
 log2fc_threshold          = args[5]#snakemake@params$log2fc_threshold
 conditionA                = args[6]#snakemake@params$conditionA
 conditionB                = args[7]#snakemake@params$conditionB
+nb_core                   = args[8]#snakemake@threads
+chunk_size                = args[9]#snakemake@params$chunk_size
 
-output_diff_counts  = args[8]#snakemake@output$diff_counts
-output_pvalue_all   = args[9]#snakemake@output$pvalue_all
-output_tmp          = args[10]#snakemake@output$tmp_dir
-output_log          = args[11]#snakemake@log[[1]]
+# Get output files  
+output_tmp                = args[10]#snakemake@output$tmp_dir
+output_diff_counts        = args[11]#snakemake@output$diff_counts
+output_pvalue_all         = args[12]#snakemake@output$pvalue_all
+output_log                = args[13]#snakemake@log[[1]]
+
 
 # Function for logging to the output
 logging <- function(str) {
@@ -52,6 +57,6 @@ logging(paste("Start Ttest_diff_methods"))
 logging(paste("pvalue_threshold", pvalue_threshold))
 logging(paste("log2fc_threshold", log2fc_threshold))
 
-system(paste(Ttest ,"-p", pvalue_threshold, "-f", log2fc_threshold, "-r", output_pvalue_all, no_GENCODE, normalization_factor_path, conditionA, conditionB, "| gzip -c > ",output_diff_counts))
+system(paste(binary ,"-p", pvalue_threshold, "-f", log2fc_threshold, "-r", output_pvalue_all, kmer_counts, sample_conditions, conditionA, conditionB, "| gzip -c > ",output_diff_counts))
 
 logging(paste("End Ttest_diff_methods"))

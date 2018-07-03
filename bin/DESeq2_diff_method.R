@@ -51,7 +51,7 @@ output_log                = args[13]#snakemake@log[[1]]
 # Temporary files
 output_tmp_chunks         = paste(output_tmp,"/tmp_chunks/",sep="")
 output_tmp_DESeq2         = paste(output_tmp,"/tmp_DESeq2/",sep="")
-header_no_GENCODE         = paste(output_tmp,"/header_no_GENCODE.txt",sep="")
+header_kmer_counts         = paste(output_tmp,"/header_kmer_counts.txt",sep="")
 tmp_concat                = paste(output_tmp,"/tmp_concat.txt",sep="")
 adj_pvalue                = paste(output_tmp,"/adj_pvalue.txt.gz",sep="")
 dataDESeq2All             = paste(output_tmp,"/dataDESeq2All.txt.gz",sep="")
@@ -92,7 +92,7 @@ registerDoParallel(cores=nb_core)
 system(paste("rm -f ", output_tmp_chunks, "/*", sep=""))
 
 # SAVE THE HEADER INTO A FILE
-system(paste("zcat", no_GENCODE, "| head -1 | cut -f2- >", header_no_GENCODE))
+system(paste("zcat", kmer_counts, "| head -1 | cut -f2- >", header_kmer_counts))
 
 # SHUFFLE AND SPLIT THE MAIN FILE INTO CHUNKS WITH AUTOINCREMENTED NAMES
 system(paste("zcat", kmer_counts, "| tail -n +2 | shuf | awk -v", paste("chunk_size=", chunk_size,sep=""), "-v", paste("output_tmp_chunks=",output_tmp_chunks,sep=""),
@@ -133,7 +133,7 @@ lst_files = system(paste("find",output_tmp_chunks,"-iname \"*_subfile.txt.gz\" |
 logging("Split done")
 
 ## LOAD THE HEADER
-header = as.character(unlist(read.table(file = header_no_GENCODE, sep = "\t", header = FALSE)))
+header = as.character(unlist(read.table(file = header_kmer_counts, sep = "\t", header = FALSE)))
 
 logging(paste("Foreach of the", length(lst_files),"files"))
 
@@ -261,7 +261,7 @@ logging("Get counts for pvalues that passed the filter")
 # CREATE THE HEADER FOR THE DESeq2 TABLE RESULT
 
 #SAVE THE HEADER
-system(paste("echo 'tag\tpvalue\tmeanA\tmeanB\tlog2FC' | paste - ", header_no_GENCODE," | gzip > ", output_diff_counts))
+system(paste("echo 'tag\tpvalue\tmeanA\tmeanB\tlog2FC' | paste - ", header_kmer_counts," | gzip > ", output_diff_counts))
 system(paste("cat", dataDESeq2Filtered, ">>", output_diff_counts))
 system(paste("rm", dataDESeq2Filtered))
 

@@ -363,20 +363,21 @@ rule transcript_counts:
     shell("{MERGE_COUNTS} {extracted_counts} | gzip -c > {output}")
 
 # 1.5 Create a conversion table from transcript id to gene ids
-rule transcript_to_gene_mapping:
-  input: REF_TRANSCRIPT_FASTA
-  output: TRANSCRIPT_TO_GENE_MAPPING
-  run:
-    mapping = open(output[0], 'w')
-    if(input[0].endswith('.gz')):
-      opener = gzip.open
-    else:
-      opener = open
-    with opener(input[0], 'rt') as f:
-      for line in f:
-        if line[0] == ">":
-          fields = line[1:].split("|",2)
-          mapping.write("\t".join([fields[0],fields[1]]) + "\n")
+if 'transcript_to_gene' not in config:
+    rule transcript_to_gene_mapping:
+        input: REF_TRANSCRIPT_FASTA
+        output: TRANSCRIPT_TO_GENE_MAPPING
+        run:
+            mapping = open(output[0], 'w')
+            if(input[0].endswith('.gz')):
+                opener = gzip.open
+            else:
+                opener = open
+            with opener(input[0], 'rt') as f:
+                for line in f:
+                    if line[0] == ">":
+                        fields = line[1:].split("|",2)
+                        mapping.write("\t".join([fields[0],fields[1]]) + "\n")
 
 # 1.6 Convert transcript counts to gene counts
 rule gene_counts:

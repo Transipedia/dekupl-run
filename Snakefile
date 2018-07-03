@@ -29,7 +29,6 @@
 import os
 import gzip
 import datetime
-from snakemake.utils import R
 from sys import platform
 
 __author__ = "Jérôme Audoux (jerome.audoux@inserm.fr)"
@@ -428,7 +427,20 @@ rule differential_gene_expression:
     norm_counts		                    = NORMALIZED_COUNTS,
     pca_design			            = PCA_DESIGN
   log : LOGS + "/DESeq2_diff_gene_exp.log"
-  script: DESEQ2_REF_TRANSCRIPTS
+  shell: 
+        """
+        Rscript {DESEQ2_REF_TRANSCRIPTS} \
+        {input.gene_counts} \
+        {input.sample_conditions} \
+        {params.condition_col} \
+        {params.condition_A} \
+        {params.condition_B} \
+        {output.differentially_expressed_genes} \
+        {output.dist_matrix} \
+        {output.norm_counts} \
+        {output.pca_design} \
+        {log}
+        """
 
 ###############################################################################
 #
@@ -582,7 +594,21 @@ rule test_diff_counts:
     chunk_size = CHUNK_SIZE,
   threads: MAX_CPU
   log: LOGS + "/test_diff_counts.logs"
-  script: TEST_DIFF_SCRIPT
+  shell: 
+        """
+        Rscript {TEST_DIFF_SCRIPT} \
+        {input.binary} \
+        {input.counts} \
+        {input.sample_conditions} \
+        {params.pvalue_threshold} \
+        {params.log2fc_threshold} \
+        {params.conditionA} \
+        {params.conditionB} \
+        {output.diff_counts} \
+        {output.pvalue_all} \
+        {output.tmp_dir} \
+        {log}
+        """
 
 rule merge_tags:
   input:

@@ -24,18 +24,20 @@
 # Software. 
 #######################################################################
 
-Ttest                     = snakemake@input$binary
-no_GENCODE                = snakemake@input$counts
-normalization_factor_path = snakemake@input$sample_conditions
-pvalue_threshold          = snakemake@params$pvalue_threshold
-log2fc_threshold          = snakemake@params$log2fc_threshold
-conditionA                = snakemake@params$conditionA
-conditionB                = snakemake@params$conditionB
+args <- commandArgs(TRUE)
 
-output_diff_counts  = snakemake@output$diff_counts
-output_pvalue_all   = snakemake@output$pvalue_all
-output_tmp          = snakemake@output$tmp_dir
-output_log          = snakemake@log[[1]]
+Ttest                     = args[1]#snakemake@input$binary
+no_GENCODE                = args[2]#snakemake@input$counts
+normalization_factor_path = args[3]#snakemake@input$sample_conditions
+pvalue_threshold          = args[4]#snakemake@params$pvalue_threshold
+log2fc_threshold          = args[5]#snakemake@params$log2fc_threshold
+conditionA                = args[6]#snakemake@params$conditionA
+conditionB                = args[7]#snakemake@params$conditionB
+
+output_diff_counts  = args[8]#snakemake@output$diff_counts
+output_pvalue_all   = args[9]#snakemake@output$pvalue_all
+output_tmp          = args[10]#snakemake@output$tmp_dir
+output_log          = args[11]#snakemake@log[[1]]
 
 # Function for logging to the output
 logging <- function(str) {

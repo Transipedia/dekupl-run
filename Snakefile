@@ -29,7 +29,6 @@
 import os
 import gzip
 import datetime
-from snakemake.utils import R
 from sys import platform
 
 __author__ = "Jérôme Audoux (jerome.audoux@inserm.fr)"
@@ -364,20 +363,21 @@ rule transcript_counts:
     shell("{MERGE_COUNTS} {extracted_counts} | gzip -c > {output}")
 
 # 1.5 Create a conversion table from transcript id to gene ids
-rule transcript_to_gene_mapping:
-  input: REF_TRANSCRIPT_FASTA
-  output: TRANSCRIPT_TO_GENE_MAPPING
-  run:
-    mapping = open(output[0], 'w')
-    if(input[0].endswith('.gz')):
-      opener = gzip.open
-    else:
-      opener = open
-    with opener(input[0], 'rt') as f:
-      for line in f:
-        if line[0] == ">":
-          fields = line[1:].split("|",2)
-          mapping.write("\t".join([fields[0],fields[1]]) + "\n")
+if 'transcript_to_gene' not in config:
+    rule transcript_to_gene_mapping:
+        input: REF_TRANSCRIPT_FASTA
+        output: TRANSCRIPT_TO_GENE_MAPPING
+        run:
+            mapping = open(output[0], 'w')
+            if(input[0].endswith('.gz')):
+                opener = gzip.open
+            else:
+                opener = open
+            with opener(input[0], 'rt') as f:
+                for line in f:
+                    if line[0] == ">":
+                        fields = line[1:].split("|",2)
+                        mapping.write("\t".join([fields[0],fields[1]]) + "\n")
 
 # 1.6 Convert transcript counts to gene counts
 rule gene_counts:
@@ -428,7 +428,20 @@ rule differential_gene_expression:
     norm_counts		                    = NORMALIZED_COUNTS,
     pca_design			            = PCA_DESIGN
   log : LOGS + "/DESeq2_diff_gene_exp.log"
-  script: DESEQ2_REF_TRANSCRIPTS
+  shell: 
+        """
+        Rscript {DESEQ2_REF_TRANSCRIPTS} \
+        {input.gene_counts} \
+        {input.sample_conditions} \
+        {params.condition_col} \
+        {params.condition_A} \
+        {params.condition_B} \
+        {output.differentially_expressed_genes} \
+        {output.dist_matrix} \
+        {output.norm_counts} \
+        {output.pca_design} \
+        {log}
+        """
 
 ###############################################################################
 #
@@ -582,7 +595,23 @@ rule test_diff_counts:
     chunk_size = CHUNK_SIZE,
   threads: MAX_CPU
   log: LOGS + "/test_diff_counts.logs"
-  script: TEST_DIFF_SCRIPT
+  shell: 
+        """
+        Rscript {TEST_DIFF_SCRIPT} \
+        {input.binary} \
+        {input.counts} \
+        {input.sample_conditions} \
+        {params.pvalue_threshold} \
+        {params.log2fc_threshold} \
+        {params.conditionA} \
+        {params.conditionB} \
+        {threads} \
+        {params.chunk_size} \
+        {output.tmp_dir} \
+        {output.diff_counts} \
+        {output.pvalue_all} \
+        {log}
+        """
 
 rule merge_tags:
   input:

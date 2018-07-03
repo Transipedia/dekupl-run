@@ -29,19 +29,21 @@ library(RColorBrewer)
 library(pheatmap)
 library(ggplot2)
 
+args <- commandArgs(TRUE)
+
 # Get parameters for the test
-gene_counts       = snakemake@input$gene_counts
-sample_conditions = snakemake@input$sample_conditions
-condition_col     = snakemake@params$condition_col
-condition_A       = snakemake@params$condition_A
-condition_B       = snakemake@params$condition_B
+gene_counts       = args[1]#snakemake@input$gene_counts
+sample_conditions = args[2]#snakemake@input$sample_conditions
+condition_col     = args[3]#snakemake@params$condition_col
+condition_A       = args[4]#snakemake@params$condition_A
+condition_B       = args[5]#snakemake@params$condition_B
 
 # Get output files
-differentially_expressed_genes  = snakemake@output$differentially_expressed_genes
-dist_matrix			                = snakemake@output$dist_matrix
-norm_counts		                  = snakemake@output$norm_counts
-pca_design			                = snakemake@output$pca_design
-output_log                      = snakemake@log[[1]]
+differentially_expressed_genes  = args[6]#snakemake@output$differentially_expressed_genes
+dist_matrix			                = args[7]#snakemake@output$dist_matrix
+norm_counts		                  = args[8]#snakemake@output$norm_counts
+pca_design			                = args[9]#snakemake@output$pca_design
+output_log                      = args[10]#snakemake@log[[1]]
 
 write(date(),file=output_log)
 

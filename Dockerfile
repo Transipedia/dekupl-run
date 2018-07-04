@@ -44,6 +44,9 @@ WORKDIR /dekupl
 COPY install_r_packages.R .
 RUN Rscript install_r_packages.R
 
+# Python
+RUN pip install snakemake
+
 COPY bin bin
 COPY share share
 

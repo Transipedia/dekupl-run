@@ -40,7 +40,7 @@ log2fc_threshold          = args[5]#snakemake@params$log2fc_threshold
 conditionA                = args[6]#snakemake@params$conditionA
 conditionB                = args[7]#snakemake@params$conditionB
 nb_core                   = args[8]#snakemake@threads
-chunk_size                = args[9]#snakemake@params$chunk_size
+chunk_size                = as.numeric(args[9])#snakemake@params$chunk_size
 
 # Get output files  
 output_tmp                = args[10]#snakemake@output$tmp_dir

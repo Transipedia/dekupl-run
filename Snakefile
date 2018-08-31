@@ -303,7 +303,7 @@ rule sample_conditions_full:
   input:
     sample_conditions     = SAMPLE_CONDITIONS,
     normalization_factors  = NORMALIZATION_FACTORS
-  shell: "{JOIN} --header {input.sample_conditions} {input.normalization_factors} > {output}"
+  shell: "{JOIN} --header -t $'\t' {input.sample_conditions} {input.normalization_factors} > {output}"
 
 
 ##############################################################################

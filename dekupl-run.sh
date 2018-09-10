@@ -8,8 +8,4 @@ while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symli
 done
 DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null && pwd )"
 
-echo "$SOURCE"
-echo "$DIR"
-
-
 snakemake -s "$DIR"/Snakefile "$@"

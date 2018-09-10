@@ -45,7 +45,7 @@ COPY install_r_packages.R .
 RUN Rscript install_r_packages.R
 
 # Python
-RUN pip install snakemake
+RUN pip install "snakemake<5.0.0"
 
 COPY bin bin
 COPY share share

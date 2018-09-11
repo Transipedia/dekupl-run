@@ -27,7 +27,7 @@ before_install:
   - sudo apt-get update
   - sudo apt-get -y install r-base r-base-dev
 install:
-  - pip install "snakemake<5.0.0"
+  - pip install "snakemake<5.2.0"
   # Install all R packages
   - sudo Rscript install_r_packages.R
   # Install latest jellyfish version

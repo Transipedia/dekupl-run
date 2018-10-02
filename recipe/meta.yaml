@@ -6,7 +6,7 @@ source:
   git_url: https://github.com/Transipedia/dekupl-run
 
 build:
-  number: 1
+  number: 2
   rpaths:
     - lib/
     - lib/R/lib/
@@ -21,7 +21,7 @@ requirements:
 
   run:
     - pigz
-    - jellyfish
+    - jellyfish >2.2.0
     - snakemake <5.2.0
     - r-base
     - rpy2

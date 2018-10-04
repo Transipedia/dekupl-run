@@ -58,9 +58,9 @@ dataDESeq2All             = paste(output_tmp,"/dataDESeq2All.txt.gz",sep="")
 dataDESeq2Filtered        = paste(output_tmp,"/dataDESeq2Filtered.txt.gz",sep="")
 
 # Create directories
-dir.create(output_tmp, showWarnings = FALSE)
-dir.create(output_tmp_chunks, showWarnings = FALSE)
-dir.create(output_tmp_DESeq2, showWarnings = FALSE)
+dir.create(output_tmp, showWarnings = FALSE, recursive = TRUE)
+dir.create(output_tmp_chunks, showWarnings = FALSE, recursive = TRUE)
+dir.create(output_tmp_DESeq2, showWarnings = FALSE, recursive = TRUE)
 
 # Function for logging to the output
 logging <- function(str) {

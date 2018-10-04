@@ -586,7 +586,7 @@ rule test_diff_counts:
   output:
     diff_counts = DIFF_COUNTS,
     pvalue_all  = PVALUE_ALL,
-    tmp_dir     = TMP_DIR + "/test_diff"
+    #tmp_dir     = TMP_DIR + "/test_diff"
     #tmp_dir     = temp(TMP_DIR + "/test_diff")
   params:
     conditionA  = CONDITION_A,
@@ -594,6 +594,7 @@ rule test_diff_counts:
     pvalue_threshold = PVALUE_MAX,
     log2fc_threshold = LOG2FC_MIN,
     chunk_size = CHUNK_SIZE,
+    tmp_dir = TMP_DIR + "/test_diff",
   threads: MAX_CPU
   log: LOGS + "/test_diff_counts.logs"
   shell: 
@@ -608,7 +609,7 @@ rule test_diff_counts:
         {params.conditionB} \
         {threads} \
         {params.chunk_size} \
-        {output.tmp_dir} \
+        {params.tmp_dir} \
         {output.diff_counts} \
         {output.pvalue_all} \
         {log}

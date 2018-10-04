@@ -39,6 +39,7 @@ script:
   - snakemake --configfile tests/config_transcript_to_gene_mapping.json
   - snakemake --configfile tests/config_ttest.json
   - snakemake --configfile tests/config_deseq2.json
+  - ! snakemake --configfile tests/config_invalid_sample_name.json;
 deploy:
   provider: script
   script: bash scripts/delivery.sh

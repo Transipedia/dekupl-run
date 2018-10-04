@@ -144,6 +144,11 @@ else:
 if LIB_TYPE not in ['rf', 'fr', 'unstranded', 'single']:
     sys.exit("Invalid value for 'lib_type', possible choices are: 'rf', 'rf' and 'unstranded'")
 
+# VALIDATE sample names, because they will be used with R and cause errors if malformed
+for name in SAMPLE_NAMES:
+    if not re.match(r"^[a-zA-Z][1-9a-zA-Z_]*$", name):
+        sys.exit("Invalid sample name '" + name + "'.\nSample names must start with at least one letter and then only letters, numbers and underscore characters are allowed")
+
 # Print Variables in use
 onstart:
     sys.stderr.write(
@@ -319,8 +324,9 @@ rule kallisto_quantif:
     r2 = FASTQ_DIR + "/{sample}" + R2_SUFFIX,
     index = KALLISTO_INDEX
   resources: ram = MAX_MEM_KALLISTO
+  params:
+    output_dir = KALLISTO_DIR + "/{sample}",
   output:
-    dir           = KALLISTO_DIR + "/{sample}",
     abundance_h5  = KALLISTO_DIR + "/{sample}/abundance.h5",
     abundance_tsv = KALLISTO_DIR + "/{sample}/abundance.tsv",
     run_info      = KALLISTO_DIR + "/{sample}/run_info.json"
@@ -328,7 +334,7 @@ rule kallisto_quantif:
   threads: 1
   run:
     start_log(log[0],"kallisto_quantif")
-    shell("{KALLISTO} quant -i {input.index} -o {output.dir} {input.r1} {input.r2} 2>> {log}")
+    shell("{KALLISTO} quant -i {input.index} -o {params.output_dir} {input.r1} {input.r2} 2>> {log}")
     end_log(log[0],"kallisto_quantif")
 
 rule kallisto_quantif_single_end:
@@ -339,8 +345,8 @@ rule kallisto_quantif_single_end:
   params:
     fragment_length     = FRAG_LENGTH,  #-l, --fragment-length=DOUBLE  Estimated average fragment length
     standard_deviation  = FRAG_STD_DEV, #-s, --sd=DOUBLE               Estimated standard deviation of fragment length
+    output_dir          = KALLISTO_DIR + "/{sample}",
   output:
-    dir           = KALLISTO_DIR + "/{sample}",
     abundance_h5  = KALLISTO_DIR + "/{sample}/abundance.h5",
     abundance_tsv = KALLISTO_DIR + "/{sample}/abundance.tsv",
     run_info      = KALLISTO_DIR + "/{sample}/run_info.json"
@@ -349,13 +355,13 @@ rule kallisto_quantif_single_end:
   run:
     start_log(log[0],"kallisto_quantif")
     options = "--single --fragment-length {params.fragment_length} --sd {params.standard_deviation}"
-    shell("{KALLISTO} quant -i {input.index} -o {output.dir} " + options + " {input.reads} 2>> {log}")
+    shell("{KALLISTO} quant -i {input.index} -o {params.output_dir} " + options + " {input.reads} 2>> {log}")
     end_log(log[0],"kallisto_quantif")
 
 # 1.4 Merge all transcripts counts from kallisto abundance files
 rule transcript_counts:
   input:
-    kallisto_outputs  = expand("{kallisto_dir}/{sample}", sample = SAMPLE_NAMES, kallisto_dir = KALLISTO_DIR)
+    kallisto_outputs  = expand("{kallisto_dir}/{sample}/abundance.tsv", sample = SAMPLE_NAMES, kallisto_dir = KALLISTO_DIR)
   output:
     TRANSCRIPT_COUNTS
   run:
@@ -585,7 +591,7 @@ rule test_diff_counts:
   output:
     diff_counts = DIFF_COUNTS,
     pvalue_all  = PVALUE_ALL,
-    tmp_dir     = TMP_DIR + "/test_diff"
+    #tmp_dir     = TMP_DIR + "/test_diff"
     #tmp_dir     = temp(TMP_DIR + "/test_diff")
   params:
     conditionA  = CONDITION_A,
@@ -593,6 +599,7 @@ rule test_diff_counts:
     pvalue_threshold = PVALUE_MAX,
     log2fc_threshold = LOG2FC_MIN,
     chunk_size = CHUNK_SIZE,
+    tmp_dir = TMP_DIR + "/test_diff",
   threads: MAX_CPU
   log: LOGS + "/test_diff_counts.logs"
   shell: 
@@ -607,7 +614,7 @@ rule test_diff_counts:
         {params.conditionB} \
         {threads} \
         {params.chunk_size} \
-        {output.tmp_dir} \
+        {params.tmp_dir} \
         {output.diff_counts} \
         {output.pvalue_all} \
         {log}

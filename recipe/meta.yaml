@@ -3,10 +3,10 @@ package:
   version: "1.1"
 
 source:
-  git_url: https://github.com/Transipedia/dekupl-run
+  path: ..
 
 build:
-  number: 2
+  number: 3
   rpaths:
     - lib/
     - lib/R/lib/
@@ -14,6 +14,8 @@ build:
 requirements:
   build:
     - {{ compiler('c') }}
+    - boost
+    - zlib
 
   host:
     - boost
@@ -29,7 +31,7 @@ requirements:
     - r-pheatmap
     - r-foreach
     - r-doparallel
-    - bioconductor-deseq2
+    - bioconductor-deseq2 >=1.18.1
 
 test:
   commands:
@@ -39,5 +41,3 @@ about:
   home: https://github.com/Transipedia/dekupl-run
   license: MIT
   license_file: LICENSE
-
-

@@ -4,24 +4,24 @@
 # Copyright (c) 2017, Jérôme Audoux (jerome.audoux@inserm.fr)
 #
 # Permission is hereby granted, free of charge, to any person obtaining
-# a copy of this software and associated documentation files 
-# (the “Software”), to deal in the Software without restriction, 
+# a copy of this software and associated documentation files
+# (the “Software”), to deal in the Software without restriction,
 # including without limitation the rights to use, copy, modify, merge,
 # publish, distribute, sublicense, and/or sell copies of the Software,
-# and to permit persons to whom the Software is furnished to do so, 
+# and to permit persons to whom the Software is furnished to do so,
 # subject to the following conditions:
 #
-# The above copyright notice and this permission notice shall be 
+# The above copyright notice and this permission notice shall be
 # included in all copies or substantial portions of the Software.
 #
-# The Software is provided “as is”, without warranty of any kind, 
-# express or implied, including but not limited to the warranties of 
-# merchantability, fitness for a particular purpose and 
+# The Software is provided “as is”, without warranty of any kind,
+# express or implied, including but not limited to the warranties of
+# merchantability, fitness for a particular purpose and
 # noninfringement. In no event shall the authors or copyright holders
-# be liable for any claim, damages or other liability, whether in an 
-# action of contract, tort or otherwise, arising from, out of or in 
-# connection with the software or the use or other dealings in the 
-# Software. 
+# be liable for any claim, damages or other liability, whether in an
+# action of contract, tort or otherwise, arising from, out of or in
+# connection with the software or the use or other dealings in the
+# Software.
 #######################################################################
 
 library("data.table")
@@ -40,9 +40,9 @@ log2fc_threshold          = args[5]#snakemake@params$log2fc_threshold
 conditionA                = args[6]#snakemake@params$conditionA
 conditionB                = args[7]#snakemake@params$conditionB
 nb_core                   = args[8]#snakemake@threads
-chunk_size                = args[9]#snakemake@params$chunk_size
+chunk_size                = as.numeric(args[9])#snakemake@params$chunk_size
 
-# Get output files  
+# Get output files
 output_tmp                = args[10]#snakemake@output$tmp_dir
 output_diff_counts        = args[11]#snakemake@output$diff_counts
 output_pvalue_all         = args[12]#snakemake@output$pvalue_all
@@ -118,7 +118,7 @@ if(nb_files > 1 && nb_line_last_file < (chunk_size/2)) {
 
   #NUMBER OF LINE OF THE TMP FILE
   nb_line_last_file = chunk_size + nb_line_last_file
- 
+
   logging(paste("The last file has", nb_line_last_file, "line(s) it will be splitted in two"))
 
   ### DIVIDE IN TWO PARTS
@@ -193,7 +193,7 @@ invisible(foreach(i=1:length(lst_files)) %dopar% {
             # meanB
             # log2FC
             # NormCount
-            
+
             write.table(data.frame(ID=rownames(resDESeq2),
                                    meanA=rowMeans(NormCount[,rownames(subset(colData, condition == conditionA))]),
                                    meanB=rowMeans(NormCount[,rownames(subset(colData, condition == conditionB))]),

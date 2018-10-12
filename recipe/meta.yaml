@@ -14,8 +14,7 @@ build:
 requirements:
   build:
     - {{ compiler('c') }}
-    - boost
-    - zlib
+    - cmake
 
   host:
     - boost
@@ -23,7 +22,6 @@ requirements:
     - zlib
 
   run:
-    - python
     - pigz
     - jellyfish >2.2.0
     - snakemake-minimal

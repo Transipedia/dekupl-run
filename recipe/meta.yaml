@@ -14,6 +14,8 @@ build:
 requirements:
   build:
     - {{ compiler('c') }}
+    - boost
+    - zlib
 
   host:
     - boost
@@ -31,7 +33,7 @@ requirements:
     - r-pheatmap
     - r-foreach
     - r-doparallel
-    - bioconductor-deseq2
+    - bioconductor-deseq2 >=1.18.1
 
 test:
   commands:

@@ -80,7 +80,7 @@ write.table(normalized_counts,file=norm_counts, sep="\t",row.names=F, col.names=
 write(resultsNames(dds),stderr())
 
 # Write DEGs
-res <- results(dds, contrast = c(condition_col,condition_A,condition_B))
+res <- results(dds, contrast = c(condition_col,condition_B,condition_A))
 write.table(res,file=differentially_expressed_genes,sep="\t",quote=FALSE)
 
 rld<-rlog(dds)

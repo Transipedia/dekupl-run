@@ -40,43 +40,37 @@ RUN apt-get update \
   && rm -rf /tmp/downloaded_packages/ /tmp/*.rds \
 && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /dekupl
 COPY install_r_packages.R .
 RUN Rscript install_r_packages.R
 
 # Python
 RUN pip install snakemake
 
-COPY bin bin
 COPY share share
 
 RUN cd share/computeNF \
-  && rm -f /dekupl/bin/computeNF \
+  && rm -f /usr/local/bin/computeNF \
   && make \
-  && cp computeNF /dekupl/bin/ \
+  && cp computeNF /usr/local/bin/ \
   && cd ../../share/joinCounts \
-  && rm -f /dekupl/bin/joinCounts \
+  && rm -f /usr/local/bin/joinCounts \
   && make \
-  && cp joinCounts /dekupl/bin/ \
+  && cp joinCounts /usr/local/bin/ \
   && cd ../../share/mergeTags \
-  && rm -f /dekupl/bin/mergeTags \
+  && rm -f /usr/local/bin/mergeTags \
   && make \
-  && cp mergeTags /dekupl/bin/ \
+  && cp mergeTags /usr/local/bin/ \
   && apt-get update \
   && apt-get install -y --no-install-recommends \
   libboost-all-dev \
   && cd ../../share/TtestFilter \
-  && rm -f /dekupl/bin/TtestFilter \
+  && rm -f /usr/local/bin/TtestFilter \
   && make \
-  && cp TtestFilter /dekupl/bin/ \
+  && cp TtestFilter /usr/local/bin/ \
   && rm -rf /var/lib/apt/lists/* \
   && cd ../../share \
-  && rm -f /dekupl/bin/kallisto \
+  && rm -f /usr/local/bin/kallisto \
   && wget https://github.com/pachterlab/kallisto/releases/download/v0.43.0/kallisto_linux-v0.43.0.tar.gz -O kallisto.tar.gz \
   && tar -xzf kallisto.tar.gz \
-  && cp kallisto_linux-v0.43.0/kallisto /dekupl/bin
+  && cp kallisto_linux-v0.43.0/kallisto /usr/local/bin
 RUN rm -rf share
-
-COPY Snakefile .
-
-ENTRYPOINT [ "snakemake", "-s", "/dekupl/Snakefile" ]

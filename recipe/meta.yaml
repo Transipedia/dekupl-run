@@ -1,12 +1,12 @@
 package:
   name: dekupl-run
-  version: "1.1"
+  version: {{ environ.get('GIT_DESCRIBE_TAG', '') }}
 
 source:
   path: ..
 
 build:
-  number: 3
+  number: {{ environ.get('GIT_DESCRIBE_NUMBER', 0) }}
   rpaths:
     - lib/
     - lib/R/lib/
@@ -14,19 +14,20 @@ build:
 requirements:
   build:
     - {{ compiler('c') }}
-    - boost
-    - zlib
+    - cmake
 
   host:
     - boost
+    - cmake
     - zlib
 
   run:
     - pigz
     - jellyfish >2.2.0
-    - snakemake <5.2.0
+    - snakemake-minimal
     - r-base
     - rpy2
+    - libiconv
     - r-rcolorbrewer
     - r-pheatmap
     - r-foreach

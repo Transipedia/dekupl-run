@@ -27,7 +27,7 @@ before_install:
   - sudo apt-get update
   - sudo apt-get -y install r-base r-base-dev
 install:
-  - pip install "snakemake<5.2.0"
+  - pip install snakemake
   # Install all R packages
   - sudo Rscript install_r_packages.R
   # Install latest jellyfish version
@@ -39,8 +39,3 @@ script:
   - snakemake --configfile tests/config_transcript_to_gene_mapping.json
   - snakemake --configfile tests/config_ttest.json
   - snakemake --configfile tests/config_deseq2.json
-deploy:
-  provider: script
-  script: bash scripts/delivery.sh
-  on:
-    branch: master

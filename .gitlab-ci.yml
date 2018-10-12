@@ -1,0 +1,42 @@
+variables:
+  GIT_SUBMODULE_STRATEGY: recursive
+
+test:
+  image: registry.gitlab.com/siderax/dekupl-run:ci
+  stage: test
+  script:
+    - snakemake --configfile tests/config_transcript_to_gene_mapping.json
+    - snakemake --configfile tests/config_ttest.json
+    - snakemake --configfile tests/config_deseq2.json
+
+delivery-conda:
+  image: continuumio/miniconda3:4.5.11
+  stage: deploy
+  only:
+    - tags
+  script:
+    - apt-get update -q -y
+    - apt-get install -y build-essential
+    - conda config --set always_yes yes --set changeps1 no
+    - conda config --add default_channels https://repo.anaconda.com/pkgs/pro
+    - conda config --add default_channels https://repo.anaconda.com/pkgs/free
+    - conda config --add default_channels https://repo.anaconda.com/pkgs/main
+    - conda config --add channels conda-forge
+    - conda config --add channels defaults
+    - conda config --add channels bioconda
+    - conda create -n build anaconda-client conda-build
+    - source activate build
+    - conda info -a
+    - conda build --user transipedia --token $ANACONDA_TOKEN recipe
+
+delivery-docker:
+  image: docker:latest
+  services:
+    - docker:dind
+  stage: deploy
+  only:
+    - tags
+  script:
+    - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+    - docker build --pull --cache-from  transipedia/dekupl-run  -t transipedia/dekupl-run -t transipedia/dekupl-run:$CI_COMMIT_REF_NAME .
+    - docker push transipedia/dekupl-run

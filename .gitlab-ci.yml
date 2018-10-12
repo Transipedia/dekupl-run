@@ -5,6 +5,11 @@ test:
   image: registry.gitlab.com/transipedia/dekupl-run:ci
   stage: test
   script:
+    - cp /usr/local/bin/computeNF $CI_PROJECT_DIR/bin
+    - cp /usr/local/bin/joinCounts $CI_PROJECT_DIR/bin
+    - cp /usr/local/bin/mergeTags $CI_PROJECT_DIR/bin
+    - cp /usr/local/bin/TtestFilter $CI_PROJECT_DIR/bin
+    - cp /usr/local/bin/kallisto $CI_PROJECT_DIR/bin
     - snakemake --configfile tests/config_transcript_to_gene_mapping.json
     - snakemake --configfile tests/config_ttest.json
     - snakemake --configfile tests/config_deseq2.json

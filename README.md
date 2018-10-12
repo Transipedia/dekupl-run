@@ -1,4 +1,5 @@
-# dekupl-run [![Build Status](https://travis-ci.org/Transipedia/dekupl-run.svg?branch=master)](https://travis-ci.org/Transipedia/dekupl-run)
+# dekupl-run [![pipeline status](https://gitlab.com/transipedia/dekupl-run/badges/master/pipeline.svg)](https://gitlab.com/transipedia/dekupl-run/commits/master)
+
 
 DE-kupl is a pipeline that finds differentially expressed k-mers between RNA-Seq datasets under The MIT License.
 
@@ -22,6 +23,30 @@ Before using Dekupl-run, install these dependencies:
 
 Either use the Docker container of the full dekupl pipeline (updated daily, https://hub.docker.com/r/ebio/dekupl/), or:
 
+
+### Run dekupl-run with conda
+#### Install conda (miniconda or anaconda)
+
+First you need to install conda, miniconda is harder to use because it comes with nothing installed
+
+```
+wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
+bash Miniconda3-latest-Linux-x86_64.sh
+```
+#### Install dekupl-run
+
+```
+conda install -n dekupl -y -m --override-channels -c transipedia -c bioconda -c conda-forge -c https://repo.anaconda.com/pkgs/main -c https://repo.anaconda.com/pkgs/free -c https://repo.anaconda.com/pkgs/pro dekupl-run
+```
+This will create a conda environment dekupl (if missing) and install dekupl run inside, the order of the parameters is important.
+
+#### Run dekupl-run
+```
+source activate dekupl
+dekupl-run --configfile my-config.json  -jNB_THREADS --resources ram=MAX_MEMORY -p
+```
+
+
 ### Run dekupl-run with docker
 #### Pull
 ```
@@ -38,6 +63,7 @@ You may need to mount some volumes :
  ```
 docker run --rm -v ${PWD}my-config.json:/dekupl/my-config.json -v ${PWD}/data:/dekupl/data  -v ${PWD}/results:/dekupl/results transipedia/dekupl-run --configfile my-config.json  -jNB_THREADS --resources ram=MAX_MEMORY -p
 ```
+
 
 ### Run dekupl-run with singularity
 ```

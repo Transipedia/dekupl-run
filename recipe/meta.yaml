@@ -1,12 +1,12 @@
 package:
   name: dekupl-run
-  version: "1.1"
+  version: {{ environ.get('GIT_DESCRIBE_TAG', '') }}
 
 source:
-  git_url: https://github.com/Transipedia/dekupl-run
+  path: ..
 
 build:
-  number: 2
+  number: {{ environ.get('GIT_DESCRIBE_NUMBER', 0) }}
   rpaths:
     - lib/
     - lib/R/lib/
@@ -17,6 +17,7 @@ requirements:
 
   host:
     - boost
+    - cmake
     - zlib
 
   run:
@@ -39,5 +40,3 @@ about:
   home: https://github.com/Transipedia/dekupl-run
   license: MIT
   license_file: LICENSE
-
-

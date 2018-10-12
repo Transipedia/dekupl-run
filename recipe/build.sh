@@ -8,15 +8,15 @@ mkdir -p "$PREFIX"/share/dekupl/bin
 mkdir -p "$PREFIX"/share/dekupl/share
 
 echo "### Install computeNF ###"
-rm -f share/computeNF/computeNF && make -C share/computeNF
+rm -f share/computeNF/computeNF && make -C share/computeNF LIBS="-lz -lm $CPPFLAGS $LDFLAGS"
 cp share/computeNF/computeNF "$PREFIX"/share/dekupl/bin
 
 echo "### Install joinCounts ###"
-rm -f share/joinCounts/joinCounts && make -C share/joinCounts
+rm -f share/joinCounts/joinCounts && make -C share/joinCounts LIBS="-lz -lm $CPPFLAGS $LDFLAGS"
 cp share/joinCounts/joinCounts "$PREFIX"/share/dekupl/bin
 
 echo "### Install mergeTags ###"
-rm -f share/mergeTags/mergeTags && make -C share/mergeTags
+rm -f share/mergeTags/mergeTags && make -C share/mergeTags LIBS="-lz -lm $CPPFLAGS $LDFLAGS"
 cp share/mergeTags/mergeTags "$PREFIX"/share/dekupl/bin
 
 echo "### Install TtestFilter ###"

@@ -39,8 +39,25 @@ script:
   - snakemake --configfile tests/config_transcript_to_gene_mapping.json
   - snakemake --configfile tests/config_ttest.json
   - snakemake --configfile tests/config_deseq2.json
+before_deploy:
+  - wget https://repo.continuum.io/miniconda/Miniconda3-4.5.11-Linux-x86_64.sh
+  - bash Miniconda3-4.5.11-Linux-x86_64.sh -b -p $HOME/miniconda
+  - hash -r
+  - conda config --set always_yes yes --set changeps1 no
+  - conda update -q conda
+  # Useful for debugging any issues with conda
+  - conda info -a
+  - conda create -q -n build python=$TRAVIS_PYTHON_VERSION anaconda-client
+  - conda config --add channels conda-forge
+  - conda config --add channels bioconda
+  - conda build recipe
 deploy:
-  provider: script
-  script: bash scripts/delivery.sh
-  on:
-    branch: master
+  # deploy docker
+  - provider: script
+    script: bash scripts/delivery-docker.sh
+    on:
+      tags: true
+      branch: master
+  # deploy conda
+  - provider: script
+    script: bash scripts/delivery-conda.sh

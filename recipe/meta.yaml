@@ -21,9 +21,10 @@ requirements:
     - zlib
 
   run:
+    - python
     - pigz
     - jellyfish >2.2.0
-    - snakemake <5.2.0
+    - snakemake-minimal
     - r-base
     - rpy2
     - r-rcolorbrewer

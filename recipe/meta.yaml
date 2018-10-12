@@ -27,6 +27,7 @@ requirements:
     - snakemake-minimal
     - r-base
     - rpy2
+    - libiconv
     - r-rcolorbrewer
     - r-pheatmap
     - r-foreach

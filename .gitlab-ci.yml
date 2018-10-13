@@ -2,7 +2,7 @@ variables:
   GIT_SUBMODULE_STRATEGY: recursive
 
 test:
-  image: registry.gitlab.com/transipedia/dekupl-run:ci
+  image: registry.gitlab.com/transipedia/dekupl-run:base
   stage: test
   script:
     - cp /usr/local/bin/computeNF $CI_PROJECT_DIR/bin

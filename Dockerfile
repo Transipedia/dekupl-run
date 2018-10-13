@@ -8,6 +8,7 @@ RUN ln -s /usr/local/bin/computeNF /dekupl/bin/computeNF \
   && ln -s /usr/local/bin/TtestFilter /dekupl/bin/TtestFilter \
   && ln -s /usr/local/bin/kallisto /dekupl/bin/kallisto
 
+COPY config.json .
 COPY Snakefile .
 
 ENTRYPOINT [ "snakemake", "-s", "/dekupl/Snakefile" ]

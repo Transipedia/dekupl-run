@@ -61,7 +61,7 @@ You may need to mount some volumes :
 
 #### Example
  ```
-docker run --rm -v ${PWD}my-config.json:/dekupl/my-config.json -v ${PWD}/data:/dekupl/data  -v ${PWD}/results:/dekupl/results transipedia/dekupl-run --configfile my-config.json  -jNB_THREADS --resources ram=MAX_MEMORY -p
+docker run --rm -v ${PWD}/my-config.json:/dekupl/my-config.json -v ${PWD}/data:/dekupl/data  -v ${PWD}/results:/dekupl/results transipedia/dekupl-run --configfile my-config.json  -jNB_THREADS --resources ram=MAX_MEMORY -p
 ```
 
 

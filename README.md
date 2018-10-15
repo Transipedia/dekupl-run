@@ -1,3 +1,5 @@
+![dekupl-annot-logo](dekupl-run-logo.png)
+
 # dekupl-run [![pipeline status](https://gitlab.com/transipedia/dekupl-run/badges/master/pipeline.svg)](https://gitlab.com/transipedia/dekupl-run/commits/master)
 
 

@@ -1,6 +1,22 @@
 variables:
   GIT_SUBMODULE_STRATEGY: recursive
 
+docker_base:
+  image: docker:stable
+  stage: build
+  services:
+    - docker:dind
+  before_script:
+    - echo "$CI_JOB_TOKEN" | docker login -u gitlab-ci-token --password-stdin "$CI_REGISTRY"
+  script:
+    - docker pull "$CI_REGISTRY_IMAGE":base || true
+    - docker build --cache-from "$CI_REGISTRY_IMAGE":base -t "$CI_REGISTRY_IMAGE":base -f Dockerfile.base .
+    - docker push "$CI_REGISTRY_IMAGE":base
+  only:
+    changes:
+      - Dockerfile.base
+      - install_r_packages.R
+
 test:
   image: registry.gitlab.com/transipedia/dekupl-run:base
   stage: test

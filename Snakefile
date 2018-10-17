@@ -59,6 +59,7 @@ CHUNK_SIZE      = config['chunk_size']  if 'chunk_size'   in config else 1000000
 TMP_DIR         = config['tmp_dir']     if 'tmp_dir'      in config else os.getcwd()
 KMER_LENGTH     = config['kmer_length'] if 'kmer_length'  in config else 31
 DIFF_METHOD     = config['diff_method'] if 'diff_method'  in config else 'DESeq2'
+GENE_DIFF_METH  = config['gene_diff_method'] if 'gene_diff_method' in config else 'DESeq2'
 DATA_TYPE       = config['data_type']   if 'data_type'    in config else 'RNA-Seq'
 FRAG_LENGTH     = config['fragment_length'] if 'fragment_length' in config else 200
 FRAG_STD_DEV    = config['fragment_standard_deviation'] if 'fragment_standard_deviation' in config else 30
@@ -110,7 +111,8 @@ JOIN_COUNTS             = BIN_DIR + "/joinCounts"
 MERGE_COUNTS            = BIN_DIR + "/mergeCounts.pl"
 MERGE_TAGS              = BIN_DIR + "/mergeTags"
 COMPUTE_NF              = BIN_DIR + "/computeNF"
-DESEQ2_REF_TRANSCRIPTS  = BIN_DIR + "/DESeq2_ref_transcripts.R"
+DESEQ2_DEG              = BIN_DIR + "/DESeq2_ref_transcripts.R"
+LIMMA_VOOM_DEG          = BIN_DIR + "/limma-voom_ref_transcripts.R"
 JELLYFISH               = "jellyfish"
 JELLYFISH_COUNT         = JELLYFISH + " count"
 JELLYFISH_DUMP          = JELLYFISH + " dump"
@@ -139,6 +141,21 @@ elif DIFF_METHOD == "Ttest":
     TEST_DIFF_SCRIPT   = BIN_DIR + "/Ttest_diff_method.R"
 else:
     sys.exit("Invalid value for 'diff_method', possible choices are: 'DESeq2' and 'Ttest'")
+
+# AUTOMATICALLY SET GENE DIFF METHOD TO LIMMA-VOOM IF MORE THAN 100 SAMPLES
+if 'gene_diff_method' not in config :
+    if len(SAMPLE_NAMES) >= 100:
+        GENE_DIFF_METH = "DESeq2"
+    else:
+        GENE_DIFF_METH = "limma-voom"
+
+# GET THE METHOD USED FOR DIFFERENTIAL GENE EXPRESSION (DEGs)
+if GENE_DIFF_METH == "DESeq2":
+    GENE_TEST_DIFF_SCRIPT   = DESEQ2_DEG
+elif GENE_DIFF_METH == "limma-voom":
+    GENE_TEST_DIFF_SCRIPT   = LIMMA_VOOM_DEG
+else:
+    sys.exit("Invalid value for 'gene_diff_method', possible choices are: 'DESeq2' and 'limma-voom'")
 
 # VERIFY LIB_TYPE VALUE
 if LIB_TYPE not in ['rf', 'fr', 'unstranded', 'single']:
@@ -173,11 +190,12 @@ onstart:
     sys.stderr.write("MIN_REC_AB  = " + str(MIN_REC_AB) + "\n")
 
     sys.stderr.write("\n* Diff analysis\n")
-    sys.stderr.write("CONDITION_A = " + CONDITION_A + "\n")
-    sys.stderr.write("CONDITION_B = " + CONDITION_B + "\n")
-    sys.stderr.write("PVALUE_MAX  = " + str(PVALUE_MAX) + "\n")
-    sys.stderr.write("LOG2FC_MIN  = " + str(LOG2FC_MIN) + "\n")
-    sys.stderr.write("DIFF_METHOD = " + DIFF_METHOD + "\n")
+    sys.stderr.write("CONDITION_A    = " + CONDITION_A + "\n")
+    sys.stderr.write("CONDITION_B    = " + CONDITION_B + "\n")
+    sys.stderr.write("PVALUE_MAX     = " + str(PVALUE_MAX) + "\n")
+    sys.stderr.write("LOG2FC_MIN     = " + str(LOG2FC_MIN) + "\n")
+    sys.stderr.write("DIFF_METHOD    = " + DIFF_METHOD + "\n")
+    sys.stderr.write("GENE_DIFF_METH = " + GENE_DIFF_METH + "\n")
     return []
 
 if DATA_TYPE == "RNA-Seq":
@@ -430,22 +448,20 @@ rule differential_gene_expression:
     condition_B = CONDITION_B
   output:
     differentially_expressed_genes  = DEGS,
-    dist_matrix			            = DIST_MATRIX,
+    #dist_matrix			            = DIST_MATRIX,
     norm_counts		                    = NORMALIZED_COUNTS,
-    pca_design			            = PCA_DESIGN
+    #pca_design			            = PCA_DESIGN
   log : LOGS + "/DESeq2_diff_gene_exp.log"
   shell: 
         """
-        Rscript {DESEQ2_REF_TRANSCRIPTS} \
+        Rscript {GENE_TEST_DIFF_SCRIPT} \
         {input.gene_counts} \
         {input.sample_conditions} \
         {params.condition_col} \
         {params.condition_A} \
         {params.condition_B} \
         {output.differentially_expressed_genes} \
-        {output.dist_matrix} \
         {output.norm_counts} \
-        {output.pca_design} \
         {log}
         """
 

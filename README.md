@@ -13,9 +13,9 @@ the production of contigs from differentially expressed k-mers.
 Dekupl-run is a pipeline build with Snakemake. It works with a [configuration file](#configuration) that you will use to set the list of samples and their conditions as well as parameters for the test.
 
 1. **Create a config.json** with the list of your samples, their conditions and the location their FASTQ file. See next section for parameters description.
-2. **Run the pipeline**
+2. **Run the pipeline**. Replace `CONFIG_JSON` with the config file you have created, `NB_THREADS` with the number of threads and `MAX_MEMORY` with the maximum memory (in Megabyte) you want DEkupl to allocate. This command line can varry depending of the installation (docker, singularity, manual, etc).
    `dekupl-run --configfile CONFIG_JSON -jNB_THREADS --resources ram=MAX_MEMORY -p`
-   Replace `CONFIG_JSON` with the config file you have created, `NB_THREADS` with the number of threads and `MAX_MEMORY` with the maximum memory (in Megabyte) you want DEkupl to allocate. This command line can varry depending of the installation (docker, singularity, manual, etc).
+
 3. **Explore results**. Once Dekupl-run has been successfully executed, DE contigs produced by Dekupl-run
    are located under `DEkupl_results/A_vs_B_kmer_counts/merged-diff-counts.tsv.gz`. They can be annoted
    can be annotate using [Dekupl-annotation](https://github.com/Transipedia/dekupl-annotation) and the vizualized with [Dekupl-viewer](https://github.com/Transipedia/dekupl-viewer).
@@ -145,7 +145,8 @@ You need to specify the value *"single"* for the parameter `lib_type`. You can a
   snakemake command-line
 - **kmer_length**: Length of k-mers (default: 31). This value shoud not exceed
   32.
-- **diff_method**: Method used for differential testing (default: DESeq2). Possible choices are 'Ttest' which is fast and 'DESeq2' which is more sensitive but longer to run.
+- **diff_method**: Method used for k-mer differential testing (default: DESeq2). Possible choices are 'Ttest' which is fast and 'DESeq2' which is more sensitive but longer to run.
+- **gene_diff_method**: Method used for gene differential testing (default: 'DESeq2' or 'limma-voom' if number of samples > 100). Possible choices are 'DESeq2' and 'limma-voom'. 'limma-voom' is a faster alternative for large cohorts.
 - **lib_type**: Paired-end library type (default: `rf`). You can specify either `rf` for reverse-forward strand-specific libraries, `fr` for strand-specific forward-reverse, or `unstranded` for unstranded libraries.
 - **output_dir**: Location of DE-kupl results (default: `DEkupl_result`).
 - **tmp_dir**: Temporary directory to use (default: `./` aka current directory)

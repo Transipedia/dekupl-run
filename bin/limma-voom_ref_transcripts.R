@@ -22,10 +22,11 @@
 # Software. 
 #######################################################################
 
-library(DESeq2)
-library(RColorBrewer)
-library(pheatmap)
-library(ggplot2)
+library(limma)
+library(edgeR)
+# library(RColorBrewer)
+# library(pheatmap)
+# library(ggplot2)
 
 args <- commandArgs(TRUE)
 
@@ -45,6 +46,10 @@ output_log                      = args[8]#snakemake@log[[1]]
 
 write(date(),file=output_log)
 
+# Debug files
+# gene_counts <- "DEkupl_result_transcript_to_gene_mapping/gene_expression/kallisto/gene_counts.tsv.gz"
+# sample_conditions <- "DEkupl_result_transcript_to_gene_mapping/metadata/sample_conditions_full.tsv"
+
 # Load counts data
 countsData = read.table(gene_counts,
                         header=T,
@@ -57,51 +62,50 @@ colData = read.table(sample_conditions,
                      row.names=1,
                      check.names=FALSE)
 
-write(colnames(countsData),stderr())
-write(rownames(colData),stderr())
+## remove genes with 0 count
+nullGenes   <- rownames(countsData[rowSums(countsData)==0,])
+countsData  <- countsData[rowSums(countsData)!=0,]
 
-colData = colData[colnames(countsData),,drop=FALSE]
+## perform limma-voom
+dge <- DGEList(countsData, group=colData$condition)
+v   <- voom(dge, plot=TRUE)
+fit <- lmFit(v)
+fit <- eBayes(fit, robust=FALSE)
 
-# Create DESeq2 object
-dds <- DESeqDataSetFromMatrix(countData=countsData,
-                              colData=colData,
-                              design = ~ condition)
-dds <- DESeq(dds)
+# writing in a file normalized counts
+# FIXME add back genes with 0 counts
+normalized_counts <- data.frame(id=row.names(v$E),v$E,row.names=NULL)
+write.table(normalized_counts, file=norm_counts, sep="\t", row.names=F, col.names=T, quote=F)
 
-#normalized counts
-NormCount<- as.data.frame(counts(dds, normalized=TRUE ))
+# Write DEGs to differentially_expressed_genes file
+results <- topTable(fit, number = Inf)
+results <- results[,c("AveExpr", "logFC", "P.Value","adj.P.Val")]
+colnames(results) <- c("baseMean", "log2FoldChange", "pvalue", "padj")
+# Add missing columns and re-order them to match DESeq2 output
+# #baseMean        log2FoldChange  lfcSE   stat    pvalue  padj
+results$lfcSE <- NA
+results$stat <- NA
+results <- results[,c("baseMean", "log2FoldChange", "lfcSE", "stat", "pvalue", "padj")]
+write.table(results,file=differentially_expressed_genes,sep="\t",quote=FALSE)
 
-#writing in a file normalized counts
-normalized_counts<-data.frame(id=row.names(NormCount),NormCount,row.names=NULL)
-write.table(normalized_counts,file=norm_counts, sep="\t",row.names=F, col.names=T, quote=F)
-
-write(resultsNames(dds),stderr())
-
-# Write DEGs
-res <- results(dds, contrast = c(condition_col,condition_B,condition_A))
-write.table(res,file=differentially_expressed_genes,sep="\t",quote=FALSE)
-
-# rld<-rlog(dds)
-# sampleDists<-dist(t(assay(rld) ) )
+# sampleDists<-dist(t(v$E) )
 # sampleDistMatrix<-as.matrix( sampleDists )
-# rownames(sampleDistMatrix)<-colnames(rld)
-# colnames(sampleDistMatrix)<-colnames(rld)
+# rownames(sampleDistMatrix)<-colnames(v$E)
+# colnames(sampleDistMatrix)<-colnames(v$E)
 # colours=colorRampPalette(rev(brewer.pal(9,"Blues")) )(255)
 # 
 # pdf(dist_matrix,width=15,height=10)
 # 
 # pheatmap(sampleDistMatrix,
-# main="clustering of samples",
-# clustering_distance_rows=sampleDists,
-# clustering_distance_cols=sampleDists,
-# col=colours,
-# fontsize = 14)
+#          main="clustering of samples",
+#          clustering_distance_rows=sampleDists,
+#          clustering_distance_cols=sampleDists,
+#          col=colours,
+#          fontsize = 14)
 # 
-# data <- plotPCA(rld,ntop=nrow(rld),returnData=TRUE)
+# data <- plotPCA(v$E,ntop=nrow(v$E),returnData=TRUE)
 # write.table(data,pca_design,row.names=F, col.names=T, quote=F,sep="\t")
 # 
 # print(ggplot(data,aes(PC1,PC2,color=condition))+geom_point()+geom_text(aes(label=name),hjust=0,vjust=0))
 # 
 # dev.off()
-
-write(date(),file=output_log,append=T)

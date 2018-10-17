@@ -10,28 +10,27 @@ the production of contigs from differentially expressed k-mers.
 
 ## Usage
 
-Dekupl-run is a pipeline build with Snakemake. It works with a [configuration file](#configuration) that you will use to set the list of samples and their conditions as well as parameters for the test.
+Dekupl-run is a pipeline built with Snakemake. It works with a [configuration file](#configuration) that you will use to set the list of samples and their conditions as well as parameters for the test.
 
-1. **Create a config.json** with the list of your samples, their conditions and the location their FASTQ file. See next section for parameters description.
-2. **Run the pipeline**. Replace `CONFIG_JSON` with the config file you have created, `NB_THREADS` with the number of threads and `MAX_MEMORY` with the maximum memory (in Megabyte) you want DEkupl to allocate. This command line can varry depending of the installation (docker, singularity, manual, etc).
+1. **Create a config.json** with the list of your samples, their conditions and the location of their FASTQ file. See next section for parameter description.
+2. **Run the pipeline**. Replace `CONFIG_JSON` with the config file you have created, `NB_THREADS` with the number of threads and `MAX_MEMORY` with the maximum memory (in Megabyte) you want DE-kupl to allocate. This command line can varry depending of the installation (docker, singularity, manual, etc).
    `dekupl-run --configfile CONFIG_JSON -jNB_THREADS --resources ram=MAX_MEMORY -p`
 
 3. **Explore results**. Once Dekupl-run has been successfully executed, DE contigs produced by Dekupl-run
-   are located under `DEkupl_results/A_vs_B_kmer_counts/merged-diff-counts.tsv.gz`. They can be annoted
-   can be annotate using [Dekupl-annotation](https://github.com/Transipedia/dekupl-annotation) and the vizualized with [Dekupl-viewer](https://github.com/Transipedia/dekupl-viewer).
+   are located under `DEkupl_results/A_vs_B_kmer_counts/merged-diff-counts.tsv.gz`. They can be annoted using [Dekupl-annotation](https://github.com/Transipedia/dekupl-annotation) and vizualized with [Dekupl-viewer](https://github.com/Transipedia/dekupl-viewer).
 
 ## Installation
 
-We recommand tu use [conda](https://anaconda.org/) to install dekupl-run, but you can also use Docker, Singularity and manual installatioN.
+We recommand tu use [conda](https://anaconda.org/) to install dekupl-run, but you can also use Docker, Singularity and manual installation.
 
 ### Option1 : Use dekupl-run with conda
 
-- **Step 1: Install conda.** If you do not have a conda distribution installed, we recommend to install miniconda as follow. See [Miniconda website](https://conda.io/miniconda.html) for other installation instructions (ex. for OSX).
+- **Step 1: Install conda.** If you do not have a conda distribution installed, we recommend to install miniconda as follows. See [Miniconda website](https://conda.io/miniconda.html) for other installation instructions (ex. for OSX).
     ```
     wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
     bash Miniconda3-latest-Linux-x86_64.sh
     ``` 
-- **Step 2: Install dekupl-run**. This will create a conda environment dekupl (if missing) and install dekupl run inside, the order of the parameters is important.
+- **Step 2: Install dekupl-run**. This will create a dekupl conda environment (if missing) and install dekupl-run inside. The order of parameters is important.
     ```
     conda install -n dekupl -y -m --override-channels -c transipedia \
      -c bioconda -c conda-forge -c https://repo.anaconda.com/pkgs/main \
@@ -65,9 +64,9 @@ We recommand tu use [conda](https://anaconda.org/) to install dekupl-run, but yo
 
 ### Option 3: Use dekupl-run with singularity
 
-We can create a singularity container from the docker image. Two method are available, they should both work. 
+One can create a singularity container from the docker image. Two methods are available, they should both work. 
 
-A difference with docker image is that with Singularity, you don't need to mount any volumes with singularity, but you must have your config.json and your inputs file in the directory where you are running dekupl-run.
+A difference with docker image is that with Singularity, you don't need to mount any volume, but you must have your config.json and your inputs file in the directory where you are running dekupl-run.
 
 - **Method 1**
   ```
@@ -86,14 +85,14 @@ A difference with docker image is that with Singularity, you don't need to mount
     - Snakemake, jellyfish, pigz, CMake, boost
     - R packages (DESEq2, RColorBrewer, pheatmap, foreach, doParallel)
     `Rscript install_r_packages.R`
-- **Step 2: . Clone this repository including submodules.**
+- **Step 2: Clone this repository including submodules.**
   `git clone --recursive https://github.com/Transipedia/dekupl-run.git`
 - **Step 3: Edit config file & run dekupl-run with Snakemake.**
   `snakemake -jNB_THREADS --resources ram=MAX_MEMORY -p`
 
 ## Configuration
 
-Here is an example of a minimal config file with only mandatory informations. You can copy this base and adapt it to your needs (see following paragraph).
+Here is an example of a minimal config file with only mandatory information. You can copy this base and adapt it to your needs (see following paragraph).
 
 ```
 {
@@ -136,25 +135,22 @@ Here is an example of a minimal config file with only mandatory informations. Yo
 You need to specify your own FASTA using the `transcript_fasta` option as well as file with mapping of transcript_id to gene_id with the `transcript_to_gene` option.
 
 **How can I use DEkupl-run with single-end reads?**
-You need to specify the value *"single"* for the parameter `lib_type`. You can also specify frangments length (see section [Configuration for single-end libraries](#configuration-for-single-endlibraries))
+Set parameter `lib_type` to *"single"*. You can also specify fragments length (see section [Configuration for single-end libraries](#configuration-for-single-endlibraries))
 
 ### General configuration parameters
 
 - **fastq_dir**:  Location of FASTQ files
-- **nb_threads**: Default number of thread to use (unless specified in the
-  snakemake command-line
-- **kmer_length**: Length of k-mers (default: 31). This value shoud not exceed
-  32.
+- **nb_threads**: Default number of threads to use (unless specified in the snakemake command-line
+- **kmer_length**: Length of k-mers (default: 31). This value shoud not exceed 32.
 - **diff_method**: Method used for k-mer differential testing (default: DESeq2). Possible choices are 'Ttest' which is fast and 'DESeq2' which is more sensitive but longer to run.
 - **gene_diff_method**: Method used for gene differential testing (default: 'DESeq2' or 'limma-voom' if number of samples > 100). Possible choices are 'DESeq2' and 'limma-voom'. 'limma-voom' is a faster alternative for large cohorts.
-- **lib_type**: Paired-end library type (default: `rf`). You can specify either `rf` for reverse-forward strand-specific libraries, `fr` for strand-specific forward-reverse, or `unstranded` for unstranded libraries.
+- **lib_type**: Paired-end library type (default: `rf`). Specify either `rf` for reverse-forward strand-specific libraries, `fr` for strand-specific forward-reverse, or `unstranded` for unstranded libraries.
 - **output_dir**: Location of DE-kupl results (default: `DEkupl_result`).
 - **tmp_dir**: Temporary directory to use (default: `./` aka current directory)
 - **r1_suffix**: Suffix to use for the FASTQ with left mate. Set `r2_suffix` for the second FASTQ.
 - **dekupl_counter**:
   * *min_recurrence*: Minimum number of samples to support a k-mer
-  * *min_recurrence_abundance*: Min abundance threshold to consider a k-mer in
-    the reccurency filter.
+  * *min_recurrence_abundance*: Min abundance threshold to consider a k-mer in the reccurence filter.
 - **diff_analysis**:
   * *condition*: Specify A and B conditions.
   * *pvalue_threshold*: Min p-value (adjusted) to consider a k-mer as DE. Only
@@ -182,7 +178,7 @@ If present, parameters **r1_suffix** and **r2_suffix** will be ignored.
 
 ## Output files
 
-The output directory of a DE-kupl will have the following content :
+The output directory of a DE-kupl run will have the following content :
 
 ```
 ├── {A}_vs_{B}_kmer_counts
@@ -209,7 +205,7 @@ FileName | Description
 `diff-counts.tsv.gz` | Contains k-mers counts from `noGENCODE-counts.tsv.gz` that have passed the differential testing. Output format is a tsv with the following columns: `kmer pvalue meanA meanB log2FC [SAMPLES]`.
 `merged-diff-counts.tsv.gz` | Contains assembled k-mers from `diff-counts.tsv.gz`. Output format is a tsv with the following columns: `nb_merged_kmers contig kmer pvalue meanA meanB log2FC [SAMPLES]`.
 `raw-counts.tsv.gz` | Containins raw k-mer counts of all libraries that have been filtered with the reccurency filters.
-`noGENCODE-counts.tsv.gz` | Containtains k-mer counts filtered from `raw-counts.tsv` with the k-mers from the reference transcription (ex: GENCODE by default).
+`noGENCODE-counts.tsv.gz` | Contains k-mer counts filtered from `raw-counts.tsv` with the k-mers from the reference transcription (ex: GENCODE by default).
 `sample_conditions_full.tsv` | Tabulated file with samples names, conditions and normalization factors. `sample_conditions.tsv` is the sample
 
 ## Whole-genome data
@@ -220,4 +216,4 @@ To do so, please change `data_type` to `WGS` in `config.json`.
 ## FAQ
 - if new samples are added to the config.json, make sure to remove the `metadata` folder in order to force SnakeMake to re-make all targets that depends on this file
 - Snakemake uses Rscript, not R. If a R module is not installed, type `which Rscript` and `which R` and make sure they point to the same installation of R.
-- For OSX support you need to install the coreutils package with HomeBrew `brew install coreutils`. This package provide Linux versions of famus Unix command like "sort", "join", etc.
+- For OSX support you need to install the coreutils package with HomeBrew `brew install coreutils`. This package provide Linux versions of famous Unix command like "sort", "join", etc.

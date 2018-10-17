@@ -2,7 +2,6 @@
 
 # dekupl-run [![pipeline status](https://gitlab.com/transipedia/dekupl-run/badges/master/pipeline.svg)](https://gitlab.com/transipedia/dekupl-run/commits/master)
 
-
 DE-kupl is a pipeline that finds differentially expressed k-mers between RNA-Seq datasets under The MIT License.
 
 Dekupl-run handles the first part of the [DE-kupl pipeline](https://github.com/Transipedia/dekupl) from raw FASTQ to
@@ -204,8 +203,8 @@ FileName | Description
 ---------|------------
 `diff-counts.tsv.gz` | Contains k-mers counts from `noGENCODE-counts.tsv.gz` that have passed the differential testing. Output format is a tsv with the following columns: `kmer pvalue meanA meanB log2FC [SAMPLES]`.
 `merged-diff-counts.tsv.gz` | Contains assembled k-mers from `diff-counts.tsv.gz`. Output format is a tsv with the following columns: `nb_merged_kmers contig kmer pvalue meanA meanB log2FC [SAMPLES]`.
-`raw-counts.tsv.gz` | Containins raw k-mer counts of all libraries that have been filtered with the reccurency filters.
-`noGENCODE-counts.tsv.gz` | Contains k-mer counts filtered from `raw-counts.tsv` with the k-mers from the reference transcription (ex: GENCODE by default).
+`raw-counts.tsv.gz` | Containins raw k-mer counts of all libraries that have been filtered with the reccurence filters.
+`noGENCODE-counts.tsv.gz` | Contains k-mer counts filtered from `raw-counts.tsv` with k-mers from the reference transcripts (ex: GENCODE by default).
 `sample_conditions_full.tsv` | Tabulated file with samples names, conditions and normalization factors. `sample_conditions.tsv` is the sample
 
 ## Whole-genome data

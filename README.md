@@ -8,88 +8,135 @@ DE-kupl is a pipeline that finds differentially expressed k-mers between RNA-Seq
 Dekupl-run handles the first part of the [DE-kupl pipeline](https://github.com/Transipedia/dekupl) from raw FASTQ to
 the production of contigs from differentially expressed k-mers.
 
-## Dependencies
+## Usage
 
-Before using Dekupl-run, install these dependencies:
+Dekupl-run is a pipeline build with Snakemake. It works with a [configuration file](#configuration) that you will use to set the list of samples and their conditions as well as parameters for the test.
 
-- Snakemake
-- jellyfish
-- pigz
-- CMake
-- boost
-- R:
-  * `Rscript install_r_packages.R`
-  * will install DESEq2, RColorBrewer, pheatmap, foreach, doParallel
+1. **Create a config.json** with the list of your samples, their conditions and the location their FASTQ file. See next section for parameters description.
+2. **Run the pipeline**
+   `dekupl-run --configfile CONFIG_JSON -jNB_THREADS --resources ram=MAX_MEMORY -p`
+   Replace `CONFIG_JSON` with the config file you have created, `NB_THREADS` with the number of threads and `MAX_MEMORY` with the maximum memory (in Megabyte) you want DEkupl to allocate. This command line can varry depending of the installation (docker, singularity, manual, etc).
+3. **Explore results**. Once Dekupl-run has been successfully executed, DE contigs produced by Dekupl-run
+   are located under `DEkupl_results/A_vs_B_kmer_counts/merged-diff-counts.tsv.gz`. They can be annoted
+   can be annotate using [Dekupl-annotation](https://github.com/Transipedia/dekupl-annotation) and the vizualized with [Dekupl-viewer](https://github.com/Transipedia/dekupl-viewer).
 
-## Installation and usage
+## Installation
 
-Either use the Docker container of the full dekupl pipeline (updated daily, https://hub.docker.com/r/ebio/dekupl/), or:
+We recommand tu use [conda](https://anaconda.org/) to install dekupl-run, but you can also use Docker, Singularity and manual installatioN.
 
+### Option1 : Use dekupl-run with conda
 
-### Run dekupl-run with conda
-#### Install conda (miniconda or anaconda)
+- **Step 1: Install conda.** If you do not have a conda distribution installed, we recommend to install miniconda as follow. See [Miniconda website](https://conda.io/miniconda.html) for other installation instructions (ex. for OSX).
+    ```
+    wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
+    bash Miniconda3-latest-Linux-x86_64.sh
+    ``` 
+- **Step 2: Install dekupl-run**. This will create a conda environment dekupl (if missing) and install dekupl run inside, the order of the parameters is important.
+    ```
+    conda install -n dekupl -y -m --override-channels -c transipedia \
+     -c bioconda -c conda-forge -c https://repo.anaconda.com/pkgs/main \
+     -c https://repo.anaconda.com/pkgs/free \
+     -c https://repo.anaconda.com/pkgs/pro dekupl-run
+    ```
+- **Step 3: Run dekupl-run**. We first activate the conda environement where dekupl-run was installed, then we run the software.
+    ```
+    source activate dekupl
+    dekupl-run --configfile my-config.json  -jNB_THREADS --resources ram=MAX_MEMORY -p
+    ```
 
-First you need to install conda, miniconda is harder to use because it comes with nothing installed
+### Option 2: Use dekupl-run with Docker
+
+- **Step 1: Retrieve the docker image.**
+    ```
+    docker pull transipedia/dekupl-run
+    ```
+- **Step 2: Run dekupl-run**.
+    You may need to mount some volumes :
+    - Your `my-config.json` to `/dekupl/my-config.json`
+    - Your fastq_dir (the one defined in your `config.json`) to `/dekupl/FASTQ_DIR`
+    - Your output_dir (the one defined in your `config.json`) to `/dekupl/OUTPUT_DIR`
+    - Any other necessary folder depending on your `config.json`
+    ```
+    docker run --rm -v ${PWD}/my-config.json:/dekupl/my-config.json \
+    -v ${PWD}/data:/dekupl/data  -v ${PWD}/results:/dekupl/results \
+    transipedia/dekupl-run --configfile my-config.json  \
+    -jNB_THREADS --resources ram=MAX_MEMORY -p
+    ```
+
+### Option 3: Use dekupl-run with singularity
+
+We can create a singularity container from the docker image. Two method are available, they should both work. 
+
+A difference with docker image is that with Singularity, you don't need to mount any volumes with singularity, but you must have your config.json and your inputs file in the directory where you are running dekupl-run.
+
+- **Method 1**
+  ```
+    singularity pull docker://transipedia/dekupl-run
+    ./dekupl-run.simg --configfile my-config.json -jNB_THREADS --resources ram=MAX_MEMORY -p
+    ```
+- **Method 2**
+    ```
+    singularity build dekupl-run.img docker://transipedia/dekupl-run
+    singularity run ./dekupl-run.img --configfile my-config.json -jNB_THREADS --resources ram=MAX_MEMORY -p
+    ```
+
+### Option 4: Build and run yourself (not recommended)
+
+- **Step 1: Install dependancies**. Before using Dekupl-run, install these dependencies:
+    - Snakemake, jellyfish, pigz, CMake, boost
+    - R packages (DESEq2, RColorBrewer, pheatmap, foreach, doParallel)
+    `Rscript install_r_packages.R`
+- **Step 2: . Clone this repository including submodules.**
+  `git clone --recursive https://github.com/Transipedia/dekupl-run.git`
+- **Step 3: Edit config file & run dekupl-run with Snakemake.**
+  `snakemake -jNB_THREADS --resources ram=MAX_MEMORY -p`
+
+## Configuration
+
+Here is an example of a minimal config file with only mandatory informations. You can copy this base and adapt it to your needs (see following paragraph).
 
 ```
-wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
-bash Miniconda3-latest-Linux-x86_64.sh
-```
-#### Install dekupl-run
+{
+  "fastq_dir": "data",
 
-```
-conda install -n dekupl -y -m --override-channels -c transipedia -c bioconda -c conda-forge -c https://repo.anaconda.com/pkgs/main -c https://repo.anaconda.com/pkgs/free -c https://repo.anaconda.com/pkgs/pro dekupl-run
-```
-This will create a conda environment dekupl (if missing) and install dekupl run inside, the order of the parameters is important.
+  "dekupl_counter": {
+    "min_recurrence": 2,
+    "min_recurrence_abundance": 5
+  },
 
-#### Run dekupl-run
-```
-source activate dekupl
-dekupl-run --configfile my-config.json  -jNB_THREADS --resources ram=MAX_MEMORY -p
+  "diff_analysis": {
+    "condition" : {
+      "A": "A",
+      "B": "B"
+    },
+    "pvalue_threshold": 0.05,
+    "log2fc_threshold": 2
+  },
+
+  "samples": [{
+      "name": "sample1",
+      "condition": "A"
+    }, {
+      "name" : "sample2",
+      "condition" : "A"
+    }, {
+      "name" : "sample3",
+      "condition" : "B"
+    }, {
+      "name" : "sample4",
+      "condition" : "B"
+    }
+  ]
+}
 ```
 
+### Parameters FAQ
 
-### Run dekupl-run with docker
-#### Pull
-```
-docker pull transipedia/dekupl-run
-```
-#### Run
-You may need to mount some volumes :
-- Your `my-config.json` to `/dekupl/my-config.json`
-- Your fastq_dir (the one defined in your `config.json`) to `/dekupl/FASTQ_DIR`
-- Your output_dir (the one defined in your `config.json`) to `/dekupl/OUTPUT_DIR`
-- Any other necessary folder depending on your `config.json`
+**How can I use DEkupl-run with non-human data ?**
+You need to specify your own FASTA using the `transcript_fasta` option as well as file with mapping of transcript_id to gene_id with the `transcript_to_gene` option.
 
-#### Example
- ```
-docker run --rm -v ${PWD}/my-config.json:/dekupl/my-config.json -v ${PWD}/data:/dekupl/data  -v ${PWD}/results:/dekupl/results transipedia/dekupl-run --configfile my-config.json  -jNB_THREADS --resources ram=MAX_MEMORY -p
-```
-
-
-### Run dekupl-run with singularity
-```
-singularity pull docker://transipedia/dekupl-run
-./dekupl-run.simg --configfile my-config.json -jNB_THREADS --resources ram=MAX_MEMORY -p
-```
-OR
-```
-singularity build dekupl-run.img docker://transipedia/dekupl-run
-singularity run ./dekupl-run.img --configfile my-config.json -jNB_THREADS --resources ram=MAX_MEMORY -p
-```
-You don't need to mount any volumes with singularity, but you must have your config.json and your inputs file in the directory where you are running dekupl-run.
-
-### Build and run yourself
-
-1. Clone this repository including submodules : `git clone --recursive https://github.com/Transipedia/dekupl-run.git`
-2. Install dependencies above
-3. Edit the config.json file to add the list of your samples, their conditions and the location their FASTQ file. See next section for parameters description.
-4. Run the pipeline with then `snakemake -jNB_THREADS --resources ram=MAX_MEMORY -p` command. Replace `NB_THREADS` with the number of threads and `MAX_MEMORY` with the maximum memory (in Megabyte) you want DEkupl to allocate.
-5. Once Dekupl-run has been fully executed, DE contigs produced by Dekupl-run
-   (under `DEkupl_results/A_vs_B_kmer_counts/merged-diff-counts.tsv.gz`)
-   can be annotate using [Dekupl-annotation](https://github.com/Transipedia/dekupl-annotation)
-
-## Configuration (config.json)
+**How can I use DEkupl-run with single-end reads?**
+You need to specify the value *"single"* for the parameter `lib_type`. You can also specify frangments length (see section [Configuration for single-end libraries](#configuration-for-single-endlibraries))
 
 ### General configuration parameters
 
@@ -173,13 +220,3 @@ To do so, please change `data_type` to `WGS` in `config.json`.
 - if new samples are added to the config.json, make sure to remove the `metadata` folder in order to force SnakeMake to re-make all targets that depends on this file
 - Snakemake uses Rscript, not R. If a R module is not installed, type `which Rscript` and `which R` and make sure they point to the same installation of R.
 - For OSX support you need to install the coreutils package with HomeBrew `brew install coreutils`. This package provide Linux versions of famus Unix command like "sort", "join", etc.
-
-## TODO
-
-- When DE-kupl is launched print all options values as they can come from differents places as well as default values
-- Add integration test case with travis-ci for most scenarios (Ttest, DESEQ2, single-end)
-- Create a dekupl binary with two commands :
-  - `dekupl build_index {genome}`:
-    This command will download reference files and create all indexes
-  - `dekupl run {dekupl_index} {config.yml} {output_dir}`:
-    This command will run the dekupl pipeline

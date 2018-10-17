@@ -51,6 +51,29 @@ delivery-conda:
     - conda info -a
     - conda build --user transipedia --token $ANACONDA_TOKEN recipe
 
+test-conda:
+  image: continuumio/miniconda3:4.5.11
+  stage: test-deploy
+  only:
+    - tags
+  script:
+    - apt-get update -q -y
+    - apt-get install -y build-essential
+    - conda config --set always_yes yes --set changeps1 no
+    - conda config --add default_channels https://repo.anaconda.com/pkgs/pro
+    - conda config --add default_channels https://repo.anaconda.com/pkgs/free
+    - conda config --add default_channels https://repo.anaconda.com/pkgs/main
+    - conda config --add channels conda-forge
+    - conda config --add channels defaults
+    - conda config --add channels bioconda
+    - conda create -y -n dekupl dekupl-run
+    - source activate dekupl
+    - conda info -a
+    - dekupl-run --configfile tests/config_transcript_to_gene_mapping.json
+    - dekupl-run --configfile tests/config_ttest.json
+    - dekupl-run --configfile tests/config_deseq2.json
+    - dekupl-run --configfile tests/config_limma-voom.json
+
 delivery-docker:
   image: docker:latest
   services:
@@ -62,3 +85,9 @@ delivery-docker:
     - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
     - docker build --pull --cache-from  transipedia/dekupl-run  -t transipedia/dekupl-run -t transipedia/dekupl-run:$CI_COMMIT_REF_NAME .
     - docker push transipedia/dekupl-run
+
+stages:
+  - build
+  - test
+  - deploy
+  - test-deploy

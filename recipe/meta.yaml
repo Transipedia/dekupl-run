@@ -33,6 +33,8 @@ requirements:
     - r-foreach
     - r-doparallel
     - bioconductor-deseq2 >=1.18.1
+    - bioconductor-limma
+    - bioconductor-edger
 
 test:
   commands:

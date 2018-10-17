@@ -60,13 +60,7 @@ test-conda:
     - apt-get update -q -y
     - apt-get install -y build-essential
     - conda config --set always_yes yes --set changeps1 no
-    - conda config --add default_channels https://repo.anaconda.com/pkgs/pro
-    - conda config --add default_channels https://repo.anaconda.com/pkgs/free
-    - conda config --add default_channels https://repo.anaconda.com/pkgs/main
-    - conda config --add channels conda-forge
-    - conda config --add channels defaults
-    - conda config --add channels bioconda
-    - conda create -y -n dekupl dekupl-run
+    - conda create -n dekupl --override-channels -c transipedia -c bioconda -c conda-forge -c https://repo.anaconda.com/pkgs/main -c https://repo.anaconda.com/pkgs/free -c https://repo.anaconda.com/pkgs/pro dekupl-run
     - source activate dekupl
     - conda info -a
     - dekupl-run --configfile tests/config_transcript_to_gene_mapping.json

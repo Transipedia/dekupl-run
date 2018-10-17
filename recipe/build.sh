@@ -29,12 +29,7 @@ tar -xzf kallisto.tar.gz
 cp kallisto_linux-v0.43.0/kallisto "$PREFIX"/share/dekupl/bin
 
 echo "### Install dekupl ###"
-cp bin/DESeq2_diff_method.R "$PREFIX"/share/dekupl/bin
-cp bin/DESeq2_ref_transcripts.R "$PREFIX"/share/dekupl/bin
-cp bin/diffFilter.pl "$PREFIX"/share/dekupl/bin
-cp bin/mergeCounts.pl "$PREFIX"/share/dekupl/bin
-cp bin/revCompFastq.pl "$PREFIX"/share/dekupl/bin
-cp bin/Ttest_diff_method.R "$PREFIX"/share/dekupl/bin
+cp bin/* "$PREFIX"/share/dekupl/bin
 
 cp Snakefile "$PREFIX"/share/dekupl
 cp config.json "$PREFIX"/share/dekupl
@@ -43,4 +38,3 @@ cp dekupl-run.sh "$PREFIX"/share/dekupl
 
 echo "### Install bin ###"
 ln -svf "$PREFIX"/share/dekupl/dekupl-run.sh "$PREFIX"/bin/dekupl-run
-

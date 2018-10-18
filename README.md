@@ -107,7 +107,9 @@ A difference with docker image is that with Singularity, you don't need to mount
 
 ### Config file structure
 
-Here is an example of a minimal config file with only mandatory information. You can copy this base and adapt it to your needs (see following paragraph).
+Here is an example of a minimal config file with only mandatory information. You can copy this base and adapt it to your needs (see following paragraphs). 
+
+The parameter `samples` containing the list of samples with their associated conditions can be replaced with a TSV file using the `samples_tsv` option (see below).
 
 ```
 {
@@ -171,10 +173,11 @@ Set parameter `lib_type` to *"single"*. You can also specify fragments length (s
   * *pvalue_threshold*: Min p-value (adjusted) to consider a k-mer as DE. Only
     DE k-mers are selected for assembly.
   * *log2fc_threshold*: Min Log2 Fold Change to consider a k-mer as DE.
-- **Samples**: An array of samples. Each sample is described by a `name` and a
+- **samples**: An array of samples. Each sample is described by a `name` and a
   `condition`. The FASTQ files for a sample will be located using the following
-  command
-    `fastq_dir/sample_name_{1,2}.fastq.gz`
+  command `fastq_dir/sample_name_{1,2}.fastq.gz`.
+  You can also provide a TSV file with your samples and conditions with the *samples_tsv* parameter (see below).
+- **samples_tsv**: A samples sheet in TSV format with at least a column 'name' with samples names and a column 'condition' with their associated conditions. This file must have a header line with the column names.
 - **transcript_fasta**: The reference transcriptome to be used for masking. By default DEKupl-run uses the human Gencode transcriptome for masking. To change this, add to the config.json file:
 `"transcript_fasta":my_transciptome.fa`
 - **transcript_to_gene**: This is a two column tabulated file, with the transcript ID in the first column and the gene ID in the second column. The file is not mandatory if the FASTA transcriptome is from Gencode, were the gene ID can be extracted from the sequence names in the FASTA. An example of this file can be found here : [tests/gencode.v24.transcripts.head1000.mapping.tsv](tests/gencode.v24.transcripts.head1000.mapping.tsv).

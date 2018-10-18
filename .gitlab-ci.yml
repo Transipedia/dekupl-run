@@ -30,6 +30,7 @@ test:
     - snakemake --configfile tests/config_ttest.json
     - snakemake --configfile tests/config_deseq2.json
     - snakemake --configfile tests/config_limma-voom.json
+    - snakemake -n --configfile tests/config_samples_sheet.json
 
 delivery-conda:
   image: continuumio/miniconda3:4.5.11
@@ -67,6 +68,7 @@ test-conda:
     - dekupl-run --configfile tests/config_ttest.json
     - dekupl-run --configfile tests/config_deseq2.json
     - dekupl-run --configfile tests/config_limma-voom.json
+    - dekupl-run -n --configfile tests/config_samples_sheet.json
 
 delivery-docker:
   image: docker:latest

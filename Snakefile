@@ -27,6 +27,7 @@
 #######################################################################
 
 import os
+import csv
 import gzip
 import datetime
 from sys import platform
@@ -44,7 +45,7 @@ def getbasename(fileName):
 configfile: "config.json"
 
 # COMMON VARIABLES
-SAMPLE_NAMES    = [i['name'] for i in config["samples"]]
+SAMPLES_TSV     = config['samples_tsv'] if 'samples_tsv' in config else ""
 CONDITION_COL   = "condition"
 CONDITION_A     = config['diff_analysis']['condition']['A']
 CONDITION_B     = config['diff_analysis']['condition']['B']
@@ -121,10 +122,6 @@ ZCAT                    = "gunzip -c"
 SORT                    = "sort"
 JOIN                    = "join"
 
-if platform == "darwin":
-    SORT = "gsort"
-    JOIN = "gjoin"
-
 # SET MEMORY/THREAD USAGE FOR EACH RULE
 MAX_MEM_KALLISTO  = 4000
 MAX_MEM_JELLYFISH = 8000
@@ -133,6 +130,33 @@ MAX_MEM_SORT      = 3000
 MAX_CPU           = 1000
 MAX_CPU_JELLYFISH = 10
 MAX_CPU_SORT      = 10
+
+# LOAD SAMPLES EITHER FROM CONFIG OF FROM TSV FILE
+# In this case we load samples from TSV file
+SAMPLES = []
+if SAMPLES_TSV:
+    with open(SAMPLES_TSV) as f:
+        #sys.stderr.write("loading samples and conditions from " + SAMPLES_TSV + "\n")
+        reader = csv.DictReader(f, delimiter='\t')
+        if "name" not in reader.fieldnames:
+            sys.exit("Missing column 'name' in " + SAMPLES_TSV)
+        elif CONDITION_COL not in reader.fieldnames:
+            sys.exit("Missing condition column '" + CONDITION_COL + "' in " + SAMPLES_TSV)
+        for row in reader:
+            SAMPLES.append({'name': row['name'], 'condition': row[CONDITION_COL]})
+elif "samples" in config:
+    for s in config["samples"]:
+        if "name" not in s:
+            sys.exit("Missing 'name' for sample " + json.dumps(s))
+        elif CONDITION_COL not in s:
+            sys.exit("Missing 'condition' for sample " + json.dumps(s))
+        SAMPLES.append({'name': s['name'], 'condition': s[CONDITION_COL]})
+
+SAMPLE_NAMES    = [i['name'] for i in SAMPLES]
+
+if platform == "darwin":
+    SORT = "gsort"
+    JOIN = "gjoin"
 
 # GET THE METHOD USED FOR DETECT DE KMERS
 if DIFF_METHOD == "DESeq2":
@@ -308,7 +332,7 @@ rule sample_conditions:
   run:
     with open(output[0], "w") as f:
       f.write("\t".join(["sample",CONDITION_COL]) + "\n")
-      for sample in config["samples"]:
+      for sample in SAMPLES:
         f.write("\t".join([sample["name"],sample[CONDITION_COL]]) + "\n")
 
 rule compute_normalization_factors:

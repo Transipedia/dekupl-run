@@ -40,3 +40,4 @@ script:
   - snakemake --configfile tests/config_ttest.json
   - snakemake --configfile tests/config_deseq2.json
   - snakemake --configfile tests/config_limma-voom.json
+  - snakemake -n --configfile tests/config_samples_sheet.json

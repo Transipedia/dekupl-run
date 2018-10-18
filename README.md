@@ -1,11 +1,25 @@
 ![dekupl-annot-logo](dekupl-run-logo.png)
 
-# dekupl-run [![pipeline status](https://gitlab.com/transipedia/dekupl-run/badges/master/pipeline.svg)](https://gitlab.com/transipedia/dekupl-run/commits/master) ![docker pull](https://img.shields.io/docker/pulls/transipedia/dekupl-run.svg) ![conda install](https://anaconda.org/transipedia/dekupl-run/badges/downloads.svg)
+[![pipeline status](https://gitlab.com/transipedia/dekupl-run/badges/master/pipeline.svg)](https://gitlab.com/transipedia/dekupl-run/commits/master) [![docker pull](https://img.shields.io/docker/pulls/transipedia/dekupl-run.svg)](https://hub.docker.com/r/transipedia/dekupl-run/) [![conda install](https://anaconda.org/transipedia/dekupl-run/badges/downloads.svg)](https://anaconda.org/Transipedia/dekupl-run)
 
 DE-kupl is a pipeline that finds differentially expressed k-mers between RNA-Seq datasets under The MIT License.
 
 Dekupl-run handles the first part of the [DE-kupl pipeline](https://github.com/Transipedia/dekupl) from raw FASTQ to
 the production of contigs from differentially expressed k-mers.
+- [Usage](#usage)
+- [Installation](#installation)
+    - [Option1 : Use dekupl-run with conda](#option1--use-dekupl-run-with-conda)
+    - [Option 2: Use dekupl-run with Docker](#option-2-use-dekupl-run-with-docker)
+    - [Option 3: Use dekupl-run with singularity](#option-3-use-dekupl-run-with-singularity)
+    - [Option 4: Build and run yourself (not recommended)](#option-4-build-and-run-yourself-not-recommended)
+- [Configuration](#configuration)
+    - [Config file structure](#config-file-structure)
+    - [Parameters FAQ](#parameters-faq)
+    - [General configuration parameters](#general-configuration-parameters)
+    - [Configuration for single-end libraries](#configuration-for-single-end-libraries)
+- [Output files](#output-files)
+- [Whole-genome data](#whole-genome-data)
+- [FAQ](#faq)
 
 ## Usage
 
@@ -90,6 +104,8 @@ A difference with docker image is that with Singularity, you don't need to mount
   `snakemake -jNB_THREADS --resources ram=MAX_MEMORY -p`
 
 ## Configuration
+
+### Config file structure
 
 Here is an example of a minimal config file with only mandatory information. You can copy this base and adapt it to your needs (see following paragraph).
 

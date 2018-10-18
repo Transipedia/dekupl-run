@@ -8,7 +8,7 @@ Dekupl-run handles the first part of the [DE-kupl pipeline](https://github.com/T
 the production of contigs from differentially expressed k-mers.
 - [Usage](#usage)
 - [Installation](#installation)
-    - [Option1 : Use dekupl-run with conda](#option1--use-dekupl-run-with-conda)
+    - [Option 1 : Use dekupl-run with conda](#option-1--use-dekupl-run-with-conda)
     - [Option 2: Use dekupl-run with Docker](#option-2-use-dekupl-run-with-docker)
     - [Option 3: Use dekupl-run with singularity](#option-3-use-dekupl-run-with-singularity)
     - [Option 4: Build and run yourself (not recommended)](#option-4-build-and-run-yourself-not-recommended)
@@ -36,7 +36,7 @@ Dekupl-run is a pipeline built with Snakemake. It works with a [configuration fi
 
 We recommand tu use [conda](https://anaconda.org/) to install dekupl-run, but you can also use Docker, Singularity and manual installation.
 
-### Option1 : Use dekupl-run with conda
+### Option 1 : Use dekupl-run with conda
 
 - **Step 1: Install conda.** If you do not have a conda distribution installed, we recommend to install miniconda as follows. See [Miniconda website](https://conda.io/miniconda.html) for other installation instructions (ex. for OSX).
     ```

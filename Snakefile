@@ -301,7 +301,7 @@ rule download_kallisto:
 # Download the gencode transcripts in fasta format (if no input transcriptome)
 rule gencode_download:
   output: REF_TRANSCRIPT_FASTA
-  shell: "wget ftp://ftp.sanger.ac.uk/pub/gencode/Gencode_human/release_24/gencode.v24.transcripts.fa.gz -O {output}"
+  shell: "wget ftp://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_24/gencode.v24.transcripts.fa.gz -O {output}"
 
 
 ###############################################################################

@@ -552,7 +552,7 @@ rule jellyfish_dump:
     exec_time = LOGS + "/{sample}_jellyfishDumpRawCounts_exec_time.log"
   run:
     start_log(log['exec_time'], "jellyfish_dump")
-    shell("{JELLYFISH_DUMP} -c {input} | {SORT} -k 1 -S {resources.ram}M --parallel {threads}| pigz -p {threads} -c > {output}")
+    shell("{JELLYFISH_DUMP} -c {input} | {SORT} -T {TMP_DIR} -k 1 -S {resources.ram}M --parallel {threads}| pigz -p {threads} -c > {output}")
     end_log(log['exec_time'], "jellyfish_dump")
 
 rule join_counts:
@@ -601,7 +601,7 @@ rule ref_transcript_dump:
   resources: ram = MAX_MEM_SORT
   run:
     start_log(log['exec_time'], "ref_transcript_dump")
-    shell("{JELLYFISH_DUMP} -c {input} | {SORT} -k 1 -S {resources.ram}M --parallel {threads}| pigz -p {threads} -c > {output}")
+    shell("{JELLYFISH_DUMP} -c {input} | {SORT} -T {TMP_DIR} -k 1 -S {resources.ram}M --parallel {threads}| pigz -p {threads} -c > {output}")
     end_log(log['exec_time'], "ref_transcript_dump")
 
 # 3.3 Filter counter k-mer that are present in the transcriptome set

@@ -187,7 +187,7 @@ if LIB_TYPE not in ['rf', 'fr', 'unstranded', 'single']:
 
 # VALIDATE sample names, because they will be used with R and cause errors if malformed
 for name in SAMPLE_NAMES:
-    if not re.match(r"^[a-zA-Z][1-9a-zA-Z_]*$", name):
+    if not re.match(r"^[a-zA-Z][0-9a-zA-Z_]*$", name):
         sys.exit("Invalid sample name '" + name + "'.\nSample names must start with at least one letter and then only letters, numbers and underscore characters are allowed")
 
 # Print Variables in use

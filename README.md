@@ -111,6 +111,8 @@ Here is an example of a minimal config file with only mandatory information. You
 
 The parameter `samples` containing the list of samples with their associated conditions can be replaced with a TSV file using the `samples_tsv` option (see below).
 
+*Note* : even though an arbitrary config file name can be specified on the command line (using --configfile), a non-empty file named ‘config.json’ must be present in the current directory. ‘config.json’ will be overriden by the name specified on the command line. 
+
 ```
 {
   "fastq_dir": "data",

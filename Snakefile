@@ -168,7 +168,7 @@ else:
 
 # AUTOMATICALLY SET GENE DIFF METHOD TO LIMMA-VOOM IF MORE THAN 100 SAMPLES
 if 'gene_diff_method' not in config :
-    if len(SAMPLE_NAMES) >= 100:
+    if len(SAMPLE_NAMES) <= 100:
         GENE_DIFF_METH = "DESeq2"
     else:
         GENE_DIFF_METH = "limma-voom"

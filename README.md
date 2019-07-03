@@ -159,7 +159,6 @@ Set parameter `lib_type` to *"single"*. You can also specify fragments length (s
 ### General configuration parameters
 
 - **fastq_dir**:  Location of FASTQ files
-- **nb_threads**: Default number of threads to use (unless specified in the snakemake command-line
 - **kmer_length**: Length of k-mers (default: 31). This value shoud not exceed 32.
 - **diff_method**: Method used for k-mer differential testing (default: DESeq2). Possible choices are 'Ttest' which is fast and 'DESeq2' which is more sensitive but longer to run.
 - **gene_diff_method**: Method used for gene differential testing (default: 'DESeq2' or 'limma-voom' if number of samples > 100). Possible choices are 'DESeq2' and 'limma-voom'. 'limma-voom' is a faster alternative for large cohorts.

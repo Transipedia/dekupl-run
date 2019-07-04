@@ -1,6 +1,5 @@
 {
   "fastq_dir": "data",
-  "nb_threads": 8,
   "kmer_length": 31,
   "lib_type": "rf",
   "output_dir":"DEkupl_result",

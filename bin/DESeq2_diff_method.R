@@ -95,8 +95,9 @@ system(paste("rm -f ", output_tmp_chunks, "/*", sep=""))
 system(paste("zcat", kmer_counts, "| head -1 | cut -f2- >", header_kmer_counts))
 
 # SHUFFLE AND SPLIT THE MAIN FILE INTO CHUNKS WITH AUTOINCREMENTED NAMES
-system(paste("zcat", kmer_counts, "| tail -n +2 | shuf | awk -v", paste("chunk_size=", chunk_size,sep=""), "-v", paste("output_tmp_chunks=",output_tmp_chunks,sep=""),
+system(paste("cp",kmer_counts, "tmp_shuff.gz; gunzip tmp_shuff.gz; rm tmp_shuff.gz; zcat", kmer_counts, "| tail -n +2 | shuf --random-source=tmp_shuff  | awk -v", paste("chunk_size=", chunk_size,sep=""), "-v", paste("output_tmp_chunks=",output_tmp_chunks,sep=""),
              "'NR%chunk_size==1{OFS=\"\\t\";x=++i\"_subfile.txt.gz\"}{OFS=\"\";print | \"gzip >\" output_tmp_chunks x}'"))
+system("rm tmp_shuff")
 
 logging("Shuffle and split done")
 

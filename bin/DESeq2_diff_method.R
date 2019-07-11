@@ -51,7 +51,7 @@ output_log                = args[13]#snakemake@log[[1]]
 # Temporary files
 output_tmp_chunks         = paste(output_tmp,"/tmp_chunks/",sep="")
 output_tmp_DESeq2         = paste(output_tmp,"/tmp_DESeq2/",sep="")
-header_kmer_counts         = paste(output_tmp,"/header_kmer_counts.txt",sep="")
+header_kmer_counts        = paste(output_tmp,"/header_kmer_counts.txt",sep="")
 tmp_concat                = paste(output_tmp,"/tmp_concat.txt",sep="")
 adj_pvalue                = paste(output_tmp,"/adj_pvalue.txt.gz",sep="")
 dataDESeq2All             = paste(output_tmp,"/dataDESeq2All.txt.gz",sep="")
@@ -95,10 +95,9 @@ system(paste("rm -f ", output_tmp_chunks, "/*", sep=""))
 system(paste("zcat", kmer_counts, "| head -1 | cut -f2- >", header_kmer_counts))
 
 # SHUFFLE AND SPLIT THE MAIN FILE INTO CHUNKS WITH AUTOINCREMENTED NAMES
-system(paste("cp",kmer_counts, "tmp_shuff.gz; gunzip tmp_shuff.gz; rm tmp_shuff.gz; zcat", kmer_counts, "| tail -n +2 | shuf --random-source=tmp_shuff  | awk -v", paste("chunk_size=", chunk_size,sep=""), "-v", paste("output_tmp_chunks=",output_tmp_chunks,sep=""),
+system(paste("zcat", kmer_counts, " >tmp_shuff; cat tmp_shuff| tail -n +2 | shuf --random-source=tmp_shuff | awk -v", paste("chunk_size=", chunk_size,sep=""), "-v", paste("output_tmp_chunks=",output_tmp_chunks,sep=""),
              "'NR%chunk_size==1{OFS=\"\\t\";x=++i\"_subfile.txt.gz\"}{OFS=\"\";print | \"gzip >\" output_tmp_chunks x}'"))
 system("rm tmp_shuff")
-
 logging("Shuffle and split done")
 
 nb_line_last_file = nbLineLastFile(output_tmp_chunks)

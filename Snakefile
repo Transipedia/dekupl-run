@@ -164,10 +164,8 @@ if DIFF_METHOD == "DESeq2":
     TEST_DIFF_SCRIPT   = BIN_DIR + "/DESeq2_diff_method.R"
 elif DIFF_METHOD == "Ttest":
     TEST_DIFF_SCRIPT   = BIN_DIR + "/Ttest_diff_method.R"
-elif DIFF_METHOD == "limma-voom":
-    TEST_DIFF_SCRIPT   = BIN_DIR + "/limma-voom_diff_method.R"
 else:
-    sys.exit("Invalid value for 'diff_method', possible choices are: 'DESeq2', 'limma-voom' and 'Ttest'")
+    sys.exit("Invalid value for 'diff_method', possible choices are: 'DESeq2' and 'Ttest'")
 
 # AUTOMATICALLY SET GENE DIFF METHOD TO LIMMA-VOOM IF MORE THAN 100 SAMPLES
 if 'gene_diff_method' not in config :

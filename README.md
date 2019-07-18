@@ -227,7 +227,8 @@ FileName | Description
 `raw-counts.tsv.gz` | Containins raw k-mer counts of all libraries that have been filtered with the reccurence filters.
 `noGENCODE-counts.tsv.gz` | Contains k-mer counts filtered from `raw-counts.tsv` with k-mers from the reference transcripts (ex: GENCODE by default).
 `sample_conditions_full.tsv` | Tabulated file with samples names, conditions and normalization factors. `sample_conditions.tsv` is the sample
-
+*Notes* :
+For limma-voom in k-mer statistical method, meanA and meanB are in CPM (counts per million).
 ## Whole-genome data
 
 It is now possible to run DE-kupl-style analysis on whole-genome data, i.e. without using a reference transcriptome.

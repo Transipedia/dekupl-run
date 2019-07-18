@@ -160,7 +160,7 @@ Set parameter `lib_type` to *"single"*. You can also specify fragments length (s
 
 - **fastq_dir**:  Location of FASTQ files
 - **kmer_length**: Length of k-mers (default: 31). This value shoud not exceed 32.
-- **diff_method**: Method used for k-mer differential testing (default: DESeq2). Possible choices are 'Ttest' which is fast and 'DESeq2' which is more sensitive but longer to run.
+- **diff_method**: Method used for k-mer differential testing (default: DESeq2). Possible choices are 'Ttest' which is the fastest, 'DESeq2' which is more sensitive but longer to run, and 'limma-voom' which is fast and sensitive especially for large cohorts.
 - **gene_diff_method**: Method used for gene differential testing (default: 'DESeq2' or 'limma-voom' if number of samples > 100). Possible choices are 'DESeq2' and 'limma-voom'. 'limma-voom' is a faster alternative for large cohorts.
 - **lib_type**: Paired-end library type (default: `rf`). Specify either `rf` for reverse-forward strand-specific libraries, `fr` for strand-specific forward-reverse, or `unstranded` for unstranded libraries.
 - **output_dir**: Location of DE-kupl results (default: `DEkupl_result`).
@@ -182,6 +182,7 @@ Set parameter `lib_type` to *"single"*. You can also specify fragments length (s
 - **transcript_fasta**: The reference transcriptome to be used for masking. By default DEKupl-run uses the human Gencode transcriptome for masking. To change this, add to the config.json file:
 `"transcript_fasta":my_transciptome.fa`
 - **transcript_to_gene**: This is a two column tabulated file, with the transcript ID in the first column and the gene ID in the second column. The file is not mandatory if the FASTA transcriptome is from Gencode, were the gene ID can be extracted from the sequence names in the FASTA. An example of this file can be found here : [tests/gencode.v24.transcripts.head1000.mapping.tsv](tests/gencode.v24.transcripts.head1000.mapping.tsv).
+- **seed**: Fixation of the seed for k-mer differential statistics. By default DEKupl-run fixes the variation due to the statistical method but it could add a quite overhead on the analysis (default: 'fixed'; possible choices are 'fixed' or 'not-fixed). Not useful for Ttest.
 
 ### Configuration for single-end libraries
 

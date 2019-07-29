@@ -66,6 +66,7 @@ FRAG_LENGTH     = config['fragment_length'] if 'fragment_length' in config else 
 FRAG_STD_DEV    = config['fragment_standard_deviation'] if 'fragment_standard_deviation' in config else 30
 OUTPUT_DIR      = config['output_dir']
 FASTQ_DIR       = config['fastq_dir']
+SEED            = config['seed'] if 'seed' in config else 'fixed'
 
 # DIRECTORIES
 BIN_DIR         = workflow.basedir + "/bin"
@@ -181,6 +182,10 @@ elif GENE_DIFF_METH == "limma-voom":
 else:
     sys.exit("Invalid value for 'gene_diff_method', possible choices are: 'DESeq2' and 'limma-voom'")
 
+# VERIFY SEED VALUE
+if SEED not in ['fixed', 'not-fixed']:
+    sys.exit("Invalid value for 'seed' in configfile, possible choices are: 'fixed' or 'not-fixed'")
+
 # VERIFY LIB_TYPE VALUE
 if LIB_TYPE not in ['rf', 'fr', 'unstranded', 'single']:
     sys.exit("Invalid value for 'lib_type', possible choices are: 'rf', 'rf' and 'unstranded'")
@@ -219,6 +224,7 @@ onstart:
     sys.stderr.write("PVALUE_MAX     = " + str(PVALUE_MAX) + "\n")
     sys.stderr.write("LOG2FC_MIN     = " + str(LOG2FC_MIN) + "\n")
     sys.stderr.write("DIFF_METHOD    = " + DIFF_METHOD + "\n")
+    sys.stderr.write("SEED           = " + SEED + "\n")
     sys.stderr.write("GENE_DIFF_METH = " + GENE_DIFF_METH + "\n")
     return []
 
@@ -640,6 +646,7 @@ rule test_diff_counts:
     log2fc_threshold = LOG2FC_MIN,
     chunk_size = CHUNK_SIZE,
     tmp_dir = TMP_DIR + "/test_diff",
+    seed = SEED
   threads: MAX_CPU
   log: LOGS + "/test_diff_counts.logs"
   shell: 
@@ -657,7 +664,8 @@ rule test_diff_counts:
         {params.tmp_dir} \
         {output.diff_counts} \
         {output.pvalue_all} \
-        {log}
+        {log} \
+        {params.seed}
         """
 
 rule merge_tags:

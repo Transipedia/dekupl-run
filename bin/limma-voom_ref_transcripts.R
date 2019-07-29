@@ -74,7 +74,7 @@ fit <- eBayes(fit, robust=FALSE)
 
 # writing in a file normalized counts
 # FIXME add back genes with 0 counts
-normalized_counts <- data.frame(id=row.names(v$E),v$E,row.names=NULL)
+normalized_counts <- data.frame(id=row.names(v$E),2^v$E,row.names=NULL)
 write.table(normalized_counts, file=norm_counts, sep="\t", row.names=F, col.names=T, quote=F)
 
 # Write DEGs to differentially_expressed_genes file

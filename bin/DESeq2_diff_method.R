@@ -188,7 +188,7 @@ invisible(foreach(i=1:length(lst_files)) %dopar% {
                              })
 
             dds <- nbinomWaldTest(dds)
-            resDESeq2 <- results(dds, pAdjustMethod = "none")
+            resDESeq2 <- results(dds, pAdjustMethod = "none", contrast = c("condition",conditionB,conditionA))
 
             #COLLECT COUNTS
             NormCount<- as.data.frame(counts(dds, normalized=TRUE))

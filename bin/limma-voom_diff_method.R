@@ -147,6 +147,12 @@ logging(paste("Foreach of the", length(lst_files),"files"))
 ## LOADING PRIOR KNOWN NORMALISATION FACTORS
 colData = read.table(sample_conditions,header=T,row.names=1)
 
+## Make Design and Contrast Matrix
+group=colData$condition
+design <- model.matrix(~0+group)
+colnames(design) <- gsub("group", "", colnames(design))
+contr.matrix <-makeContrasts(contrasts=paste(conditionB,conditionA,sep="-"),levels=colnames(design))
+
 invisible(foreach(i=1:length(lst_files)) %dopar% {
             ##READ AND FORMAT DATA
             bigTab = read.table(lst_files[i],header=F,stringsAsFactors=F)
@@ -157,7 +163,7 @@ invisible(foreach(i=1:length(lst_files)) %dopar% {
             names(bigTab)=header
             countData = as.matrix(bigTab)
 
-            dge <- DGEList(count=countData,group=colData$condition)
+            dge <- DGEList(count=countData,group=group)
 
             NormCount_names = colnames(bigTab)
             rm(bigTab);gc()
@@ -170,8 +176,9 @@ invisible(foreach(i=1:length(lst_files)) %dopar% {
             dge$samples$norm.factors <- normFactors
             
             #RUN Limma-voom
-            v <- voom(dge)
+            v <- voom(dge, design = design)
             fitLimmaVoom <-lmFit(v)
+            fitLimmaVoom <- contrasts.fit(fitLimmaVoom, contrasts=contr.matrix)
             fitLimmaVoom <-eBayes(fitLimmaVoom, robust=FALSE)
             resLimmaVoom <- topTable(fitLimmaVoom, sort.by="none", number = nrow(countData))
 

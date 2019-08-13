@@ -41,6 +41,7 @@ conditionA                = args[6]#snakemake@params$conditionA
 conditionB                = args[7]#snakemake@params$conditionB
 nb_core                   = args[8]#snakemake@threads
 chunk_size                = as.numeric(args[9])#snakemake@params$chunk_size
+seed                      = args[14]#snakemake@params$seed
 
 # Get output files
 output_tmp                = args[10]#snakemake@output$tmp_dir
@@ -94,9 +95,15 @@ system(paste("rm -f ", output_tmp_chunks, "/*", sep=""))
 # SAVE THE HEADER INTO A FILE
 system(paste("zcat", kmer_counts, "| head -1 | cut -f2- >", header_kmer_counts))
 
-# SHUFFLE AND SPLIT THE MAIN FILE INTO CHUNKS WITH AUTOINCREMENTED NAMES
-system(paste("zcat", kmer_counts, "| tail -n +2 | shuf | awk -v", paste("chunk_size=", chunk_size,sep=""), "-v", paste("output_tmp_chunks=",output_tmp_chunks,sep=""),
+# SHUFFLE AND SPLIT THE MAIN FILE INTO CHUNKS WITH AUTOINCREMENTED NAMES, ACCORDING TO SEED
+if(seed == 'fixed'){
+    system(paste("zcat", kmer_counts, " >tmp_shuff; cat tmp_shuff| tail -n +2 | shuf --random-source=tmp_shuff | awk -v", paste("chunk_size=", chunk_size,sep=""), "-v", paste("output_tmp_chunks=",output_tmp_chunks,sep=""),
              "'NR%chunk_size==1{OFS=\"\\t\";x=++i\"_subfile.txt.gz\"}{OFS=\"\";print | \"gzip >\" output_tmp_chunks x}'"))
+    system("rm tmp_shuff")
+}else{
+    system(paste("zcat", kmer_counts, "| tail -n +2 | shuf | awk -v", paste("chunk_size=", chunk_size,sep=""), "-v", paste("output_tmp_chunks=",output_tmp_chunks,sep=""),
+                 "'NR%chunk_size==1{OFS=\"\\t\";x=++i\"_subfile.txt.gz\"}{OFS=\"\";print | \"gzip >\" output_tmp_chunks x}'"))
+}
 
 logging("Shuffle and split done")
 
@@ -181,7 +188,7 @@ invisible(foreach(i=1:length(lst_files)) %dopar% {
                              })
 
             dds <- nbinomWaldTest(dds)
-            resDESeq2 <- results(dds, pAdjustMethod = "none")
+            resDESeq2 <- results(dds, pAdjustMethod = "none", contrast = c("condition",conditionB,conditionA))
 
             #COLLECT COUNTS
             NormCount<- as.data.frame(counts(dds, normalized=TRUE))

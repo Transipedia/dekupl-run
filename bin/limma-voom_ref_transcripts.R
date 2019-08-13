@@ -39,10 +39,10 @@ condition_B       = args[5]#snakemake@params$condition_B
 
 # Get output files
 differentially_expressed_genes  = args[6]#snakemake@output$differentially_expressed_genes
-norm_counts		                  = args[7]#snakemake@output$norm_counts
+norm_counts		                = args[7]#snakemake@output$norm_counts
 output_log                      = args[8]#snakemake@log[[1]]
-#dist_matrix			              = args[10]#snakemake@output$dist_matrix
-#pca_design			                = args[11]#snakemake@output$pca_design
+#dist_matrix			        = args[10]#snakemake@output$dist_matrix
+#pca_design			            = args[11]#snakemake@output$pca_design
 
 write(date(),file=output_log)
 
@@ -61,15 +61,21 @@ colData = read.table(sample_conditions,
                      header=T,
                      row.names=1,
                      check.names=FALSE)
+# Make Design and Contrast Matrix
+group=colData$condition
+design <- model.matrix(~0+group)
+colnames(design) <- gsub("group", "", colnames(design))
+contr.matrix <-makeContrasts(contrasts=paste(condition_B,condition_A,sep="-"),levels=colnames(design))
 
 ## remove genes with 0 count
 nullGenes   <- rownames(countsData[rowSums(countsData)==0,])
 countsData  <- countsData[rowSums(countsData)!=0,]
 
 ## perform limma-voom
-dge <- DGEList(countsData, group=colData$condition)
-v   <- voom(dge, plot=TRUE)
+dge <- DGEList(countsData, group=group)
+v   <- voom(dge, plot=TRUE, design = design)
 fit <- lmFit(v)
+fit <- contrasts.fit(fit, contrasts=contr.matrix)
 fit <- eBayes(fit, robust=FALSE)
 
 # writing in a file normalized counts

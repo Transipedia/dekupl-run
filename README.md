@@ -160,7 +160,7 @@ Set parameter `lib_type` to *"single"*. You can also specify fragments length (s
 
 - **fastq_dir**:  Location of FASTQ files
 - **kmer_length**: Length of k-mers (default: 31). This value shoud not exceed 32.
-- **diff_method**: Method used for k-mer differential testing (default: DESeq2). Possible choices are 'Ttest' which is fast and 'DESeq2' which is more sensitive but longer to run.
+- **diff_method**: Method used for k-mer differential testing (default: DESeq2). Possible choices are 'Ttest' which is the fastest, 'DESeq2' which is more sensitive but longer to run, and 'limma-voom' which is fast and sensitive especially for large cohorts.
 - **gene_diff_method**: Method used for gene differential testing (default: 'DESeq2' or 'limma-voom' if number of samples > 100). Possible choices are 'DESeq2' and 'limma-voom'. 'limma-voom' is a faster alternative for large cohorts.
 - **lib_type**: Paired-end library type (default: `rf`). Specify either `rf` for reverse-forward strand-specific libraries, `fr` for strand-specific forward-reverse, or `unstranded` for unstranded libraries.
 - **output_dir**: Location of DE-kupl results (default: `DEkupl_result`).
@@ -228,6 +228,8 @@ FileName | Description
 `noGENCODE-counts.tsv.gz` | Contains k-mer counts filtered from `raw-counts.tsv` with k-mers from the reference transcripts (ex: GENCODE by default).
 `sample_conditions_full.tsv` | Tabulated file with samples names, conditions and normalization factors. `sample_conditions.tsv` is the sample
 
+*Notes* :
+For limma-voom in k-mer statistical method, meanA and meanB are in CPM (counts per million).
 ## Whole-genome data
 
 It is now possible to run DE-kupl-style analysis on whole-genome data, i.e. without using a reference transcriptome.

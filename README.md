@@ -1,3 +1,6 @@
+**WARNING: dekupl-annot does NOT work with this version of dekupl-run!! (yet)**
+
+
 ![dekupl-annot-logo](dekupl-run-logo.png)
 
 [![pipeline status](https://gitlab.com/transipedia/dekupl-run/badges/master/pipeline.svg)](https://gitlab.com/transipedia/dekupl-run/commits/master) [![docker pull](https://img.shields.io/docker/pulls/transipedia/dekupl-run.svg)](https://hub.docker.com/r/transipedia/dekupl-run/) [![conda install](https://anaconda.org/transipedia/dekupl-run/badges/downloads.svg)](https://anaconda.org/Transipedia/dekupl-run)

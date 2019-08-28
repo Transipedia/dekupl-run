@@ -32,17 +32,18 @@ kmer_counts               = args[2]#snakemake@input$counts
 sample_conditions         = args[3]#snakemake@input$sample_conditions
 pvalue_threshold          = args[4]#snakemake@params$pvalue_threshold
 log2fc_threshold          = args[5]#snakemake@params$log2fc_threshold
-conditionA                = args[6]#snakemake@params$conditionA
-conditionB                = args[7]#snakemake@params$conditionB
-nb_core                   = args[8]#snakemake@threads
-chunk_size                = args[9]#snakemake@params$chunk_size
+nb_core                   = args[6]#snakemake@threads
+chunk_size                = args[7]#snakemake@params$chunk_size
 
 # Get output files  
-output_tmp                = args[10]#snakemake@output$tmp_dir
-output_diff_counts        = args[11]#snakemake@output$diff_counts
-output_pvalue_all         = args[12]#snakemake@output$pvalue_all
-output_log                = args[13]#snakemake@log[[1]]
+output_tmp                = args[8]#snakemake@output$tmp_dir
+output_diff_counts        = paste(args[9], ".tsv.gz", sep="")#snakemake@output$diff_counts
+output_pvalue_all         = paste(args[10], ".txt.gz", sep="")#snakemake@output$pvalue_all
+output_log                = args[11]#snakemake@log[[1]]
 
+# Get conditions
+conditionA                = args[13]#snakemake@params$conditionA
+conditionB                = args[14]#snakemake@params$conditionB
 
 # Function for logging to the output
 logging <- function(str) {

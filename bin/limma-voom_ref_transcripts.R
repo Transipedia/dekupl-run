@@ -31,24 +31,23 @@ library(edgeR)
 args <- commandArgs(TRUE)
 
 # Get parameters for the test
-gene_counts       = args[1]#snakemake@input$gene_counts
-sample_conditions = args[2]#snakemake@input$sample_conditions
-condition_col     = args[3]#snakemake@params$condition_col
-condition_A       = args[4]#snakemake@params$condition_A
-condition_B       = args[5]#snakemake@params$condition_B
+gene_counts                    = args[1]#snakemake@input$gene_counts
+sample_conditions              = args[2]#snakemake@input$sample_conditions
+condition_col                  = args[3]#snakemake@params$condition_col
 
 # Get output files
-differentially_expressed_genes  = args[6]#snakemake@output$differentially_expressed_genes
-norm_counts		                = args[7]#snakemake@output$norm_counts
-output_log                      = args[8]#snakemake@log[[1]]
+differentially_expressed_genes = args[4]#snakemake@output$differentially_expressed_genes
+norm_counts                    = args[5]#snakemake@output$norm_counts
+output_log                     = args[6]#snakemake@log[[1]]
 #dist_matrix			        = args[10]#snakemake@output$dist_matrix
 #pca_design			            = args[11]#snakemake@output$pca_design
 
-write(date(),file=output_log)
+# Get conditions and contrast
+nb_condition                   = as.numeric(args[7])#snakemake@nb_condition
+conditions                     = args[8:(8+nb_condition-1)]#snakemake@conditions
+contrast                       = args[(8+nb_condition):length(args)]#snakemake@contrast
 
-# Debug files
-# gene_counts <- "DEkupl_result_transcript_to_gene_mapping/gene_expression/kallisto/gene_counts.tsv.gz"
-# sample_conditions <- "DEkupl_result_transcript_to_gene_mapping/metadata/sample_conditions_full.tsv"
+write(date(),file=output_log)
 
 # Load counts data
 countsData = read.table(gene_counts,
@@ -61,19 +60,31 @@ colData = read.table(sample_conditions,
                      header=T,
                      row.names=1,
                      check.names=FALSE)
-# Make Design and Contrast Matrix
-group=colData$condition
-design <- model.matrix(~0+group)
-colnames(design) <- gsub("group", "", colnames(design))
-contr.matrix <-makeContrasts(contrasts=paste(condition_B,condition_A,sep="-"),levels=colnames(design))
 
 ## remove genes with 0 count
 nullGenes   <- rownames(countsData[rowSums(countsData)==0,])
 countsData  <- countsData[rowSums(countsData)!=0,]
 
+
+##PREPATATION OF LIMMA-VOOM
+#Group
+group=colData$condition
+#Design
+design <- model.matrix(~0+group)
+colnames(design) <- gsub("group", "", colnames(design))
+#Contrast
+if (contrast[1] == 'NA'){
+   x.contrast=paste(conditions[2],conditions[1],sep="-")
+}else{
+   x.contrast=contrast
+}
+
+contr.matrix <-makeContrasts(contrasts=x.contrast,levels=colnames(design))
+print(contr.matrix)
+
 ## perform limma-voom
-dge <- DGEList(countsData, group=group)
-v   <- voom(dge, plot=TRUE, design = design)
+dge <- DGEList(count=countsData, group=group)
+v   <- voom(dge, design, plot=TRUE)
 fit <- lmFit(v)
 fit <- contrasts.fit(fit, contrasts=contr.matrix)
 fit <- eBayes(fit, robust=FALSE)
@@ -83,17 +94,18 @@ fit <- eBayes(fit, robust=FALSE)
 normalized_counts <- data.frame(id=row.names(v$E),2^v$E,row.names=NULL)
 write.table(normalized_counts, file=norm_counts, sep="\t", row.names=F, col.names=T, quote=F)
 
-# Write DEGs to differentially_expressed_genes file
-results <- topTable(fit, number = Inf)
-results <- results[,c("AveExpr", "logFC", "P.Value","adj.P.Val")]
-colnames(results) <- c("baseMean", "log2FoldChange", "pvalue", "padj")
-# Add missing columns and re-order them to match DESeq2 output
-# #baseMean        log2FoldChange  lfcSE   stat    pvalue  padj
-results$lfcSE <- NA
-results$stat <- NA
-results <- results[,c("baseMean", "log2FoldChange", "lfcSE", "stat", "pvalue", "padj")]
-write.table(results,file=differentially_expressed_genes,sep="\t",quote=FALSE)
-
+for (j in 1:length(x.contrast)) {
+	# Write DEGs to differentially_expressed_genes file
+	results <- topTable(fit, number = nrow(countsData),coef=j,sort.by=NULL,resort.by=NULL)
+	results <- results[,c("AveExpr", "logFC", "P.Value","adj.P.Val")]
+	colnames(results) <- c("baseMean", "log2FoldChange", "pvalue", "padj")
+	# Add missing columns and re-order them to match DESeq2 output
+	# #baseMean        log2FoldChange  lfcSE   stat    pvalue  padj
+	results$lfcSE <- NA
+	results$stat <- NA
+	results <- results[,c("baseMean", "log2FoldChange", "lfcSE", "stat", "pvalue", "padj")]
+	write.table(results,file=paste(differentially_expressed_genes,j,".tsv",sep=""),sep="\t",quote=FALSE)
+}
 # sampleDists<-dist(t(v$E) )
 # sampleDistMatrix<-as.matrix( sampleDists )
 # rownames(sampleDistMatrix)<-colnames(v$E)

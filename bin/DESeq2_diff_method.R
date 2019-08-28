@@ -37,17 +37,19 @@ kmer_counts               = args[2]#snakemake@input$counts
 sample_conditions         = args[3]#snakemake@input$sample_conditions
 pvalue_threshold          = args[4]#snakemake@params$pvalue_threshold
 log2fc_threshold          = args[5]#snakemake@params$log2fc_threshold
-conditionA                = args[6]#snakemake@params$conditionA
-conditionB                = args[7]#snakemake@params$conditionB
-nb_core                   = args[8]#snakemake@threads
-chunk_size                = as.numeric(args[9])#snakemake@params$chunk_size
-seed                      = args[14]#snakemake@params$seed
+nb_core                   = args[6]#snakemake@threads
+chunk_size                = as.numeric(args[7])#snakemake@params$chunk_size
 
 # Get output files
-output_tmp                = args[10]#snakemake@output$tmp_dir
-output_diff_counts        = args[11]#snakemake@output$diff_counts
-output_pvalue_all         = args[12]#snakemake@output$pvalue_all
-output_log                = args[13]#snakemake@log[[1]]
+output_tmp                = args[8]#snakemake@output$tmp_dir
+output_diff_counts        = paste(args[9], ".tsv.gz", sep="")#snakemake@output$diff_counts
+output_pvalue_all         = paste(args[10], ".txt.gz", sep="")#snakemake@output$pvalue_all
+output_log                = args[11]#snakemake@log[[1]]
+seed                      = args[12]#snakemake@params$seed
+
+# Get conditions
+condition0                = args[14]#snakemake@params$condition0
+condition1                = args[15]#snakemake@params$condition1
 
 # Temporary files
 output_tmp_chunks         = paste(output_tmp,"/tmp_chunks/",sep="")
@@ -95,7 +97,7 @@ system(paste("rm -f ", output_tmp_chunks, "/*", sep=""))
 # SAVE THE HEADER INTO A FILE
 system(paste("zcat", kmer_counts, "| head -1 | cut -f2- >", header_kmer_counts))
 
-# SHUFFLE AND SPLIT THE MAIN FILE INTO CHUNKS WITH AUTOINCREMENTED NAMES, ACCORDING TO SEED
+# SHUFFLE AND SPLIT THE MAIN FILE INTO CHUNKS WITH AUTOINCREMENTED NAMES
 if(seed == 'fixed'){
     system(paste("zcat", kmer_counts, " >tmp_shuff; cat tmp_shuff| tail -n +2 | shuf --random-source=tmp_shuff | awk -v", paste("chunk_size=", chunk_size,sep=""), "-v", paste("output_tmp_chunks=",output_tmp_chunks,sep=""),
              "'NR%chunk_size==1{OFS=\"\\t\";x=++i\"_subfile.txt.gz\"}{OFS=\"\";print | \"gzip >\" output_tmp_chunks x}'"))
@@ -104,7 +106,6 @@ if(seed == 'fixed'){
     system(paste("zcat", kmer_counts, "| tail -n +2 | shuf | awk -v", paste("chunk_size=", chunk_size,sep=""), "-v", paste("output_tmp_chunks=",output_tmp_chunks,sep=""),
                  "'NR%chunk_size==1{OFS=\"\\t\";x=++i\"_subfile.txt.gz\"}{OFS=\"\";print | \"gzip >\" output_tmp_chunks x}'"))
 }
-
 logging("Shuffle and split done")
 
 nb_line_last_file = nbLineLastFile(output_tmp_chunks)
@@ -188,7 +189,7 @@ invisible(foreach(i=1:length(lst_files)) %dopar% {
                              })
 
             dds <- nbinomWaldTest(dds)
-            resDESeq2 <- results(dds, pAdjustMethod = "none", contrast = c("condition",conditionB,conditionA))
+            resDESeq2 <- results(dds, pAdjustMethod = "none", contrast = c("condition",condition1,condition0))
 
             #COLLECT COUNTS
             NormCount<- as.data.frame(counts(dds, normalized=TRUE))
@@ -202,8 +203,8 @@ invisible(foreach(i=1:length(lst_files)) %dopar% {
             # NormCount
 
             write.table(data.frame(ID=rownames(resDESeq2),
-                                   meanA=rowMeans(NormCount[,rownames(subset(colData, condition == conditionA))]),
-                                   meanB=rowMeans(NormCount[,rownames(subset(colData, condition == conditionB))]),
+                                   meanA=rowMeans(NormCount[,rownames(subset(colData, condition == condition0))]),
+                                   meanB=rowMeans(NormCount[,rownames(subset(colData, condition == condition1))]),
                                    log2FC=resDESeq2$log2FoldChange,
                                    NormCount),
                         file=gzfile(paste(output_tmp_DESeq2,i,"_dataDESeq2_part_tmp.gz", sep="")),
@@ -268,7 +269,7 @@ logging("Get counts for pvalues that passed the filter")
 # CREATE THE HEADER FOR THE DESeq2 TABLE RESULT
 
 #SAVE THE HEADER
-system(paste("echo 'tag\tpvalue\tmeanA\tmeanB\tlog2FC' | paste - ", header_kmer_counts," | gzip > ", output_diff_counts))
+system(paste0("echo 'tag\tpvalue\tmean_",condition0,"\tmean_",condition1,"\tlog2FC' | paste - ", header_kmer_counts," | gzip > ", output_diff_counts))
 system(paste("cat", dataDESeq2Filtered, ">>", output_diff_counts))
 system(paste("rm", dataDESeq2Filtered))
 

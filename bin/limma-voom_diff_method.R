@@ -29,6 +29,7 @@ library("foreach")
 library("doParallel")
 library("limma")
 library("edgeR")
+library("DESeq2")
 
 args <- commandArgs(TRUE)
 
@@ -38,26 +39,29 @@ kmer_counts               = args[2]#snakemake@input$counts
 sample_conditions         = args[3]#snakemake@input$sample_conditions
 pvalue_threshold          = args[4]#snakemake@params$pvalue_threshold
 log2fc_threshold          = args[5]#snakemake@params$log2fc_threshold
-conditionA                = args[6]#snakemake@params$conditionA
-conditionB                = args[7]#snakemake@params$conditionB
-nb_core                   = args[8]#snakemake@threads
-chunk_size                = as.numeric(args[9])#snakemake@params$chunk_size
-seed                      = args[14]#snakemake@params$seed
+nb_core                   = args[6]#snakemake@threads
+chunk_size                = as.numeric(args[7])#snakemake@params$chunk_size
 
 # Get output files
-output_tmp                = args[10]#snakemake@output$tmp_dir
-output_diff_counts        = args[11]#snakemake@output$diff_counts
-output_pvalue_all         = args[12]#snakemake@output$pvalue_all
-output_log                = args[13]#snakemake@log[[1]]
+output_tmp                = args[8]#snakemake@output$tmp_dir
+pre_output_diff_counts    = args[9]#snakemake@output$diff_counts
+pre_output_pvalue_all     = args[10]#snakemake@output$pvalue_all
+output_log                = args[11]#snakemake@log[[1]]
+seed                      = args[12]#snakemake@params$seed
+
+# Get conditions and contrast
+nb_condition              = as.numeric(args[13])#snakemake@nb_condition
+conditions                = args[14:(14+nb_condition-1)]#snakemake@conditions
+contrast                  = args[(14+nb_condition):length(args)]#snakemake@contrast
 
 # Temporary files
 output_tmp_chunks         = paste(output_tmp,"/tmp_chunks/",sep="")
 output_tmp_LimmaVoom      = paste(output_tmp,"/tmp_LimmaVoom/",sep="")
 header_kmer_counts        = paste(output_tmp,"/header_kmer_counts.txt",sep="")
 tmp_concat                = paste(output_tmp,"/tmp_concat.txt",sep="")
-adj_pvalue                = paste(output_tmp,"/adj_pvalue.txt.gz",sep="")
-dataLimmaVoomAll          = paste(output_tmp,"/dataLimmaVoomAll.txt.gz",sep="")
-dataLimmaVoomFiltered     = paste(output_tmp,"/dataLimmaVoomFiltered.txt.gz",sep="")
+pre_adj_pvalue            = paste(output_tmp,"/adj_pvalue",sep="")
+pre_dataLimmaVoomAll      = paste(output_tmp,"/dataLimmaVoomAll",sep="")
+pre_dataLimmaVoomFiltered = paste(output_tmp,"/dataLimmaVoomFiltered",sep="")
 
 # Create directories
 dir.create(output_tmp, showWarnings = FALSE, recursive = TRUE)
@@ -142,73 +146,90 @@ logging("Split done")
 ## LOAD THE HEADER
 header = as.character(unlist(read.table(file = header_kmer_counts, sep = "\t", header = FALSE)))
 
-logging(paste("Foreach of the", length(lst_files),"files"))
-
 ## LOADING PRIOR KNOWN NORMALISATION FACTORS
 colData = read.table(sample_conditions,header=T,row.names=1)
 
-## Make Design and Contrast Matrix
+##PREPATATION OF LIMMA-VOOM
+#Group
 group=colData$condition
+#Design
 design <- model.matrix(~0+group)
 colnames(design) <- gsub("group", "", colnames(design))
-contr.matrix <-makeContrasts(contrasts=paste(conditionB,conditionA,sep="-"),levels=colnames(design))
+#Contrast
+if (contrast[1] == 'NA'){
+   x.contrast=paste(conditions[2],conditions[1],sep="-")
+}else{
+   x.contrast=contrast
+}
+print(x.contrast)
+print(group)
+print(colnames(design))
+contr.matrix <-makeContrasts(contrasts=x.contrast,levels=colnames(design))
+print(contr.matrix)
 
+logging(paste("Foreach of the", length(lst_files),"files"))
+
+## LimmaVoom ANALYSIS ON EACH CHUNKS
 invisible(foreach(i=1:length(lst_files)) %dopar% {
             ##READ AND FORMAT DATA
-            bigTab = read.table(lst_files[i],header=F,stringsAsFactors=F)
+            countData = read.table(lst_files[i],header=F,stringsAsFactors=F)
             #SET TAGS AS ROWNAMES
-            rownames(bigTab)=bigTab[,1]
+            rownames(countData)=countData[,1]
             #REMOVE THE TAG AS A COLUMN
-            bigTab=bigTab[,2:ncol(bigTab)]
-            names(bigTab)=header
-            countData = as.matrix(bigTab)
-
+            countData=countData[,2:ncol(countData)]
+            names(countData)=header
+            #FORMATING DATA
             dge <- DGEList(count=countData,group=group)
 
-            NormCount_names = colnames(bigTab)
-            rm(bigTab);gc()
-
-            ##RUN LIMMA-VOOM AND COLLECT Limma-voom results
-
-            #REPLACE SIZE FACTORS by SIZE FACTORS COMPUTED ON
-            #THE ALL DATASET
+            #REPLACE SIZE FACTORS by SIZE FACTORS COMPUTED ON THE ALL DATASET
             normFactors <- c(t(matrix(colData$normalization_factor)))
             dge$samples$norm.factors <- normFactors
             
+            ##RUN LIMMA-VOOM AND COLLECT Limma-voom results
+            
             #RUN Limma-voom
-            v <- voom(dge, design = design)
+            v <- voom(dge,design)
             fitLimmaVoom <-lmFit(v)
             fitLimmaVoom <- contrasts.fit(fitLimmaVoom, contrasts=contr.matrix)
             fitLimmaVoom <-eBayes(fitLimmaVoom, robust=FALSE)
-            resLimmaVoom <- topTable(fitLimmaVoom, sort.by="none", number = nrow(countData))
-
-            #COLLECT COUNTS
-            NormCount<- as.data.frame(cpm(dge, log=F,normalized.lib.sizes=TRUE))
-            names(NormCount) <- NormCount_names
-
-            # WRITE A TSV WITH THIS FORMAT FOR THE CURRENT CHUNK
-            # Kmer_ID
-            # meanA
-            # meanB
-            # log2FC
-            # NormCount
-            write.table(data.frame(ID=rownames(resLimmaVoom),
-                                   meanA=rowMeans(NormCount[,rownames(subset(colData, condition == conditionA))]),
-                                   meanB=rowMeans(NormCount[,rownames(subset(colData, condition == conditionB))]),
-                                   log2FC=resLimmaVoom$logFC,
-                                   NormCount),
-                        file=gzfile(paste(output_tmp_LimmaVoom,i,"_dataLimmaVoom_part_tmp.gz", sep="")),
-                        sep="\t",quote=FALSE,
-                        row.names = FALSE,
-                        col.names = FALSE)
             
-            # WRITE PVALUES FOR THE CURRENT CHUNK
-            write.table(data.frame(ID=rownames(resLimmaVoom),pvalue=resLimmaVoom$P.Value),
-                        file=gzfile(paste(output_tmp_LimmaVoom,i,"_pvalue_part_tmp.gz",sep="")),
-                        sep="\t",quote=FALSE,
-                        row.names = FALSE,
-                        col.names = FALSE)
+            for (j in 1:length(x.contrast)) {
+               resLimmaVoom <-topTable(fitLimmaVoom, number = nrow(countData), coef=j,sort.by=NULL,resort.by=NULL)
+               #COLLECT COUNTS  (in cpm)
+               NormCount<- as.data.frame(cpm(dge, log=F,normalized.lib.sizes=TRUE))
+               names(NormCount) <- colnames(countData)
+               NormCount=cbind(NormCount,ID=rownames(NormCount))
+               
+               # WRITE A TSV WITH THIS FORMAT FOR THE CURRENT CHUNK
+               # Kmer_ID, mean,..., mean, log2FC, NormCount
+               #recuperation des moyennes selon les conditions presentes dans le contraste
+               #conditions presentes dans le contraste
+               print(x.contrast[j])
+               cond_contrast=intersect(unique(strsplit(x.contrast[j], "-|\\+|/|\\(|\\)")[[1]]), conditions)
+               #calculs des moyennes (en cpm)
+               means=matrix(NA,length(rownames(resLimmaVoom)),length(cond_contrast))
+               for (k in 1:length(cond_contrast)){
+                   means[,k]=rowMeans(NormCount[,rownames(subset(colData,condition == cond_contrast[k]))])
+               }
+               means=cbind(as.data.frame(means, row.names=rownames(NormCount)),rownames(NormCount))
+               names(means)=c(cond_contrast,"ID")
+               #ecriture
+               dataframe_tmp=data.frame(ID=rownames(resLimmaVoom),log2FC=resLimmaVoom$logFC)
+               dataframe_tmp=merge(means, dataframe_tmp, by="ID")
 
+               write.table(merge(dataframe_tmp, NormCount, by="ID"),
+                           file=gzfile(paste(output_tmp_LimmaVoom,i,"_dataLimmaVoom_part_tmp",j,".txt.gz", sep="")),
+                           sep="\t",quote=FALSE,
+                           row.names = FALSE,
+                           col.names = FALSE)
+
+               # WRITE PVALUES FOR THE CURRENT CHUNK
+               write.table(data.frame(ID=rownames(resLimmaVoom),pvalue=resLimmaVoom$P.Value),
+                           file=gzfile(paste(output_tmp_LimmaVoom,i,"_pvalue_part_tmp",j,".txt.gz",sep="")),
+                           sep="\t",quote=FALSE,
+                           row.names = FALSE,
+                           col.names = FALSE)
+            }
             # Remove processed chunk
             system(paste("rm",lst_files[i]))
 
@@ -217,50 +238,59 @@ invisible(foreach(i=1:length(lst_files)) %dopar% {
 system(paste("rm -rf", output_tmp_chunks))
 
 logging("Foreach done")
+print(x.contrast)
+for (j in 1:length(x.contrast)){
+	print(x.contrast[j])
+	output_pvalue_all     = paste(pre_output_pvalue_all,j,".txt.gz",sep="")
+	dataLimmaVoomAll      = paste(pre_dataLimmaVoomAll,j,".txt.gz",sep="")
+	adj_pvalue            = paste(pre_adj_pvalue,j,".txt.gz",sep="")
+	dataLimmaVoomFiltered = paste(pre_dataLimmaVoomFiltered,j,".txt.gz",sep="")
+	output_diff_counts    = paste(pre_output_diff_counts,j,".tsv.gz",sep="")
 
-#MERGE ALL CHUNKS PVALUE INTO A FILE
-system(paste("find", output_tmp_LimmaVoom, "-name '*_pvalue_part_tmp.gz' | xargs cat >", output_pvalue_all))
+	#MERGE ALL CHUNKS PVALUE INTO A FILE
+	pvalueToFind=paste("'*_pvalue_part_tmp",j,".txt.gz'",sep="")
+	system(paste("find", output_tmp_LimmaVoom, "-name",pvalueToFind,"| xargs cat >",output_pvalue_all))
+	logging(paste("Pvalues merged into",output_pvalue_all))
 
-logging(paste("Pvalues merged into",output_pvalue_all))
+	#MERGE ALL CHUNKS LimmaVoom INTO A FILE
+	resultsToFind=paste("'*_dataLimmaVoom_part_tmp",j,".txt.gz'",sep="")
+	system(paste("find", output_tmp_LimmaVoom, "-name",resultsToFind,"| xargs cat >", dataLimmaVoomAll))
+	logging(paste("LimmaVoom results merged into",dataLimmaVoomAll))
 
-#MERGE ALL CHUNKS LimmaVoom INTO A FILE
-system(paste("find", output_tmp_LimmaVoom, "-name '*_dataLimmaVoom_part_tmp.gz' | xargs cat >", dataLimmaVoomAll))
+	#CREATE AND WRITE THE ADJUSTED PVALUE UNDER THRESHOLD WITH THEIR ID
+	pvalueAll         = read.table(output_pvalue_all, header=F, stringsAsFactors=F)
+	names(pvalueAll)  = c("tag","pvalue")
+	adjPvalue         = p.adjust(as.numeric(as.character(pvalueAll[,"pvalue"])),"BH")
 
-logging(paste("LimmaVoom results merged into",dataLimmaVoomAll))
+	adjPvalue_dataframe = data.frame(tag=pvalueAll$tag,
+									 pvalue=adjPvalue)
+
+	write.table(adjPvalue_dataframe,
+				file=gzfile(adj_pvalue),
+				sep="\t",
+				quote=FALSE,
+				col.names = FALSE,
+				row.names = FALSE)
+
+	logging(paste("Pvalues are adjusted for",x.contrast[j]))
+
+	#LEFT JOIN INTO dataLimmaVoomAll
+	#GET ALL THE INFORMATION (ID,MEAN,...,MEAN,LOG2FC,COUNTS) FOR DE KMERS
+	cond_contrast=intersect(unique(strsplit(x.contrast[j], "-|\\+|/|\\(|\\)")[[1]]), conditions)
+	num_column_logFC=paste("(abs(\\$", 3+length(cond_contrast), ")", sep="") #3=tag+pvalue+log2FC
+	system(paste("echo \"join <(zcat ", adj_pvalue,") <(zcat ", dataLimmaVoomAll," ) | awk 'function abs(x){return ((x < 0.0) ? -x : x)} {if", num_column_logFC, ">=", log2fc_threshold, " && \\$2 <= ", pvalue_threshold, ") print \\$0}' | tr ' ' '\t' | gzip > ", dataLimmaVoomFiltered, "\" | bash", sep=""))
+	system(paste("rm", adj_pvalue, dataLimmaVoomAll))
+
+	logging("Get counts for pvalues that passed the filter")
+
+	#CREATE THE FINAL HEADER USING ADJ_PVALUE AND DATALimmaVoomALL ONES AND COMPRESS THE FILE
+	head=paste("'tag\tpvalue",paste(paste0("mean_",cond_contrast),collapse="\t"),"log2FC'",sep="\t")
+	system(paste("echo",head,"| paste - ", header_kmer_counts," | gzip > ", output_diff_counts))
+	system(paste("cat", dataLimmaVoomFiltered, ">>", output_diff_counts))
+	system(paste("rm", dataLimmaVoomFiltered))
+}
 
 # REMOVE LimmaVoom CHUNKS RESULTS
 system(paste("rm -rf", output_tmp_LimmaVoom))
-
-#CREATE AND WRITE THE ADJUSTED PVALUE UNDER THRESHOLD WITH THEIR ID
-pvalueAll         = read.table(output_pvalue_all, header=F, stringsAsFactors=F)
-names(pvalueAll)  = c("tag","pvalue")
-adjPvalue         = p.adjust(as.numeric(as.character(pvalueAll[,"pvalue"])),"BH")
-
-adjPvalue_dataframe = data.frame(tag=pvalueAll$tag,
-                                 pvalue=adjPvalue)
-
-write.table(adjPvalue_dataframe,
-            file=gzfile(adj_pvalue),
-            sep="\t",
-            quote=FALSE,
-            col.names = FALSE,
-            row.names = FALSE)
-
-logging("Pvalues are adjusted")
-
-#LEFT JOIN INTO dataLimmaVoomAll
-#GET ALL THE INFORMATION (ID,MEAN_A,MEAN_B,LOG2FC,COUNTS) FOR DE KMERS
-system(paste("echo \"join <(zcat ", adj_pvalue,") <(zcat ", dataLimmaVoomAll," ) | awk 'function abs(x){return ((x < 0.0) ? -x : x)} {if (abs(\\$5) >=", log2fc_threshold, " && \\$2 <= ", pvalue_threshold, ") print \\$0}' | tr ' ' '\t' | gzip > ", dataLimmaVoomFiltered, "\" | bash", sep=""))
-system(paste("rm", adj_pvalue, dataLimmaVoomAll))
-
-logging("Get counts for pvalues that passed the filter")
-
-#CREATE THE FINAL HEADER USING ADJ_PVALUE AND DATALimmaVoomALL ONES AND COMPRESS THE FILE
-# CREATE THE HEADER FOR THE LimmaVoom TABLE RESULT
-
-#SAVE THE HEADER
-system(paste("echo 'tag\tpvalue\tmeanA\tmeanB\tlog2FC' | paste - ", header_kmer_counts," | gzip > ", output_diff_counts))
-system(paste("cat", dataLimmaVoomFiltered, ">>", output_diff_counts))
-system(paste("rm", dataLimmaVoomFiltered))
 
 logging("Analysis done")

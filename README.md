@@ -156,14 +156,15 @@ You need to specify your own FASTA using the `transcript_fasta` option as well a
 **How can I use DEkupl-run with single-end reads?**
 Set parameter `lib_type` to *"single"*. You can also specify fragments length (see section [Configuration for single-end libraries](#configuration-for-single-endlibraries))
 
+
 **How can I use DEkupl-run with a lot of conditions?**
-You need to specify your contrast by set parameter `contrast`.
-For exemple:
-To test the condition `Test1` against `Control`: 'Ctrl-Test1'
-To test the mean effect of `Test1` and `Test2`, against `Control`: '(Test1+Test2)/2-Ctrl'
-To test whether the treatment has more effect at time at 6:00 than at 2:00: '(T6-C6)-(T2-C2)'
-NB: it is the same to '(T6-T2)-(C6-C2)'
-You can specify more than one contrast:' "contrast" : {"Ctrl-Test1","Ctrl-Test2","(Test1+Test2)/2-Ctrl"}, '
+You need to specify your contrast by set parameter `contrast`. For exemple:
+- To test the condition `Test1` against `Control`: "Ctrl-Test1"
+- To test the mean effect of `Test1` and `Test2`, against `Control`: "(Test1+Test2)/2-Ctrl"
+- To test whether the treatment has more effect at time at 6:00 than at 2:00: "(T6-C6)-(T2-C2)" or "(T6-T2)-(C6-C2)". It is the same thing.
+
+You can specify more than one contrast:
+> "contrast" : {"Ctrl-Test1","Ctrl-Test2","(Test1+Test2)/2-Ctrl"}, 
 
 ### General configuration parameters
 

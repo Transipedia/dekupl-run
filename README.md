@@ -124,8 +124,8 @@ The parameter `samples` containing the list of samples with their associated con
 
   "diff_analysis": {
     "condition" : {
-      "A": "A",
-      "B": "B"
+      "0": "Ctrl",
+      "1": "Test"
     },
     "pvalue_threshold": 0.05,
     "log2fc_threshold": 2
@@ -133,16 +133,16 @@ The parameter `samples` containing the list of samples with their associated con
 
   "samples": [{
       "name": "sample1",
-      "condition": "A"
+      "condition": "Ctrl"
     }, {
       "name" : "sample2",
-      "condition" : "A"
+      "condition" : "Ctrl"
     }, {
       "name" : "sample3",
-      "condition" : "B"
+      "condition" : "Test"
     }, {
       "name" : "sample4",
-      "condition" : "B"
+      "condition" : "Test"
     }
   ]
 }
@@ -155,6 +155,15 @@ You need to specify your own FASTA using the `transcript_fasta` option as well a
 
 **How can I use DEkupl-run with single-end reads?**
 Set parameter `lib_type` to *"single"*. You can also specify fragments length (see section [Configuration for single-end libraries](#configuration-for-single-endlibraries))
+
+**How can I use DEkupl-run with a lot of conditions?**
+You need to specify your contrast by set parameter `contrast`.
+For exemple:
+To test the condition `Test1` against `Control`: 'Ctrl-Test1'
+To test the mean effect of `Test1` and `Test2`, against `Control`: '(Test1+Test2)/2-Ctrl'
+To test whether the treatment has more effect at time at 6:00 than at 2:00: '(T6-C6)-(T2-C2)'
+NB: it is the same to '(T6-T2)-(C6-C2)'
+You can specify more than one contrast:' "contrast" : {"Ctrl-Test1","Ctrl-Test2","(Test1+Test2)/2-Ctrl"}, '
 
 ### General configuration parameters
 
@@ -170,7 +179,7 @@ Set parameter `lib_type` to *"single"*. You can also specify fragments length (s
   * *min_recurrence*: Minimum number of samples to support a k-mer
   * *min_recurrence_abundance*: Min abundance threshold to consider a k-mer in the reccurence filter.
 - **diff_analysis**:
-  * *condition*: Specify A and B conditions.
+  * *condition*: Specify conditions.
   * *pvalue_threshold*: Min p-value (adjusted) to consider a k-mer as DE. Only
     DE k-mers are selected for assembly.
   * *log2fc_threshold*: Min Log2 Fold Change to consider a k-mer as DE.
@@ -201,11 +210,12 @@ If present, parameters **r1_suffix** and **r2_suffix** will be ignored.
 The output directory of a DE-kupl run will have the following content :
 
 ```
-├── {A}_vs_{B}_kmer_counts
-│   ├── diff-counts.tsv.gz
-│   ├── merged-diff-counts.tsv.gz
+├── CONDITIONS_kmer_counts
+│   ├── diff-counts{n°contrast}.tsv.gz
+│   ├── merged-diff-counts{n°contrast}.tsv.gz
+│   ├── raw_pvals{n°contrast}.txt.gz
 ├── gene_expression
-│   ├── {A}vs{B}-DEGs.tsv
+│   ├── DEGs{n°contrast}.tsv
 ├── kmer_counts
 │   ├── normalization_factors.tsv
 │   ├── raw-counts.tsv.gz
@@ -222,14 +232,14 @@ The following table describes the output files produced by DE-kupl :
 
 FileName | Description
 ---------|------------
-`diff-counts.tsv.gz` | Contains k-mers counts from `noGENCODE-counts.tsv.gz` that have passed the differential testing. Output format is a tsv with the following columns: `kmer pvalue meanA meanB log2FC [SAMPLES]`.
-`merged-diff-counts.tsv.gz` | Contains assembled k-mers from `diff-counts.tsv.gz`. Output format is a tsv with the following columns: `nb_merged_kmers contig kmer pvalue meanA meanB log2FC [SAMPLES]`.
+`diff-counts.tsv.gz` | Contains k-mers counts from `noGENCODE-counts.tsv.gz` that have passed the differential testing. Output format is a tsv with the following columns: `kmer pvalue mean0 mean1 log2FC [SAMPLES]`.
+`merged-diff-counts.tsv.gz` | Contains assembled k-mers from `diff-counts.tsv.gz`. Output format is a tsv with the following columns: `nb_merged_kmers contig kmer pvalue mean_{condition0} mean_{condition1} log2FC [SAMPLES]`.
 `raw-counts.tsv.gz` | Containins raw k-mer counts of all libraries that have been filtered with the reccurence filters.
 `noGENCODE-counts.tsv.gz` | Contains k-mer counts filtered from `raw-counts.tsv` with k-mers from the reference transcripts (ex: GENCODE by default).
 `sample_conditions_full.tsv` | Tabulated file with samples names, conditions and normalization factors. `sample_conditions.tsv` is the sample
 
 *Notes* :
-For limma-voom in k-mer statistical method, meanA and meanB are in CPM (counts per million).
+For limma-voom in k-mer statistical method, means are in CPM (counts per million).
 ## Whole-genome data
 
 It is now possible to run DE-kupl-style analysis on whole-genome data, i.e. without using a reference transcriptome.

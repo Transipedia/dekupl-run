@@ -3,12 +3,14 @@
   "kmer_length": 31,
   "lib_type": "rf",
   "output_dir":"DEkupl_result",
-  "diff_method": "DESeq2",
+  "diff_method": "limma-voom",
   "data_type": "RNA-Seq",
   "chunk_size":1000000,
   "r1_suffix": "_1.fastq.gz",
   "r2_suffix": "_2.fastq.gz",
-
+  
+  "contrast" : {"Ctrl-Test1","Ctrl-Test2","(Test1+Test2)/2-Ctrl"},
+  
   "dekupl_counter": {
     "min_recurrence": 2,
     "min_recurrence_abundance": 5
@@ -16,8 +18,9 @@
 
   "diff_analysis": {
     "condition" : {
-      "A": "A",
-      "B": "B"
+      "0": "Ctrl",
+      "1": "Test1",
+      "2": "Test2"
     },
     "pvalue_threshold": 0.05,
     "log2fc_threshold": 2
@@ -25,16 +28,22 @@
 
   "samples": [{
       "name": "sample1",
-      "condition": "A"
+      "condition": "Ctrl"
     }, {
       "name" : "sample2",
-      "condition" : "A"
+      "condition" : "Ctrl"
     }, {
       "name" : "sample3",
-      "condition" : "B"
+      "condition" : "Test1"
     }, {
       "name" : "sample4",
-      "condition" : "B"
+      "condition" : "Test1"
+    }, {
+      "name" : "sample5",
+      "condition" : "Test2"
+    }, {
+      "name" : "sample6",
+      "condition" : "Test2"
     }
   ]
 }

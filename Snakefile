@@ -47,8 +47,15 @@ configfile: "config.json"
 # COMMON VARIABLES
 SAMPLES_TSV     = config['samples_tsv'] if 'samples_tsv' in config else ""
 CONDITION_COL   = "condition"
-CONDITION_A     = config['diff_analysis']['condition']['A']
-CONDITION_B     = config['diff_analysis']['condition']['B']
+CONDITION={}
+CONDITION = config['diff_analysis']['condition']
+TAB_CONDITION=[''] # conversion to array
+NB_CONDITION=len(CONDITION)
+for i in range(0,NB_CONDITION,1):
+	if i==0:
+		TAB_CONDITION[i]=CONDITION[str(i)]
+	else:
+	    TAB_CONDITION.append(CONDITION[str(i)])
 PVALUE_MAX      = config['diff_analysis']['pvalue_threshold']
 LOG2FC_MIN      = config['diff_analysis']['log2fc_threshold']
 MIN_REC         = config['dekupl_counter']['min_recurrence']
@@ -67,27 +74,41 @@ FRAG_STD_DEV    = config['fragment_standard_deviation'] if 'fragment_standard_de
 OUTPUT_DIR      = config['output_dir']
 FASTQ_DIR       = config['fastq_dir']
 SEED            = config['seed'] if 'seed' in config else 'fixed'
-
+CONTRAST        = config['contrast']    if (('contrast' in config) and (DIFF_METHOD == "limma-voom")) else 'NA'
+TAB_CONTRAST=[''] # conversion to array
+if CONTRAST == 'NA':
+    TAB_CONTRAST[0]=CONTRAST
+else:
+    flag='false'
+    for key in CONTRAST:
+        key=key.replace('(','\(') # conversion to pass as an argument
+        key=key.replace(')','\)')
+        if flag == 'false':
+            TAB_CONTRAST[0]=key
+            flag='true'
+        else:
+            TAB_CONTRAST.append(key)
+    
 # DIRECTORIES
 BIN_DIR         = workflow.basedir + "/bin"
 TMP_DIR         = temp(TMP_DIR + "/dekupl_tmp")
 GENE_EXP_DIR    = OUTPUT_DIR + "/gene_expression"
 KALLISTO_DIR    = GENE_EXP_DIR + "/kallisto"
 COUNTS_DIR      = OUTPUT_DIR + "/kmer_counts"
-KMER_DE_DIR     = OUTPUT_DIR + "/" + CONDITION_A + "_vs_" + CONDITION_B + "_kmer_counts"
+KMER_DE_DIR     = OUTPUT_DIR + "/CONDITIONS_kmer_counts"
 METADATA_DIR    = OUTPUT_DIR + "/metadata"
 REFERENCE_DIR   = OUTPUT_DIR + "/references"
 LOGS            = OUTPUT_DIR + "/Logs"
 
-# FILES
+#~ # FILES
 RAW_COUNTS                  = COUNTS_DIR    + "/raw-counts.tsv.gz"
 MASKED_COUNTS               = COUNTS_DIR    + "/masked-counts.tsv.gz"
 NORMALIZATION_FACTORS       = COUNTS_DIR  + "/normalization_factors.tsv"
-DIFF_COUNTS                 = KMER_DE_DIR   + "/diff-counts.tsv.gz"
-PVALUE_ALL                  = KMER_DE_DIR   + "/raw_pvals.txt.gz"
-MERGED_DIFF_COUNTS          = KMER_DE_DIR   + "/merged-diff-counts.tsv.gz"
-ASSEMBLIES_FASTA            = KMER_DE_DIR   + "/merged-diff-counts.fa.gz"
-ASSEMBLIES_BAM              = KMER_DE_DIR   + "/merged-diff-counts.bam"
+DIFF_COUNTS                 = KMER_DE_DIR   + "/diff-counts"
+PVALUE_ALL                  = KMER_DE_DIR   + "/raw_pvals"
+MERGED_DIFF_COUNTS          = KMER_DE_DIR   + "/merged-diff-counts"
+ASSEMBLIES_FASTA            = KMER_DE_DIR   + "/merged-diff-counts"
+ASSEMBLIES_BAM              = KMER_DE_DIR   + "/merged-diff-counts"
 SAMPLE_CONDITIONS           = METADATA_DIR  + "/sample_conditions.tsv"
 SAMPLE_CONDITIONS_FULL      = METADATA_DIR  + "/sample_conditions_full.tsv"
 DEFAULT_TRANSCRIPTS         = "".join(REFERENCE_DIR + "/gencode.v24.transcripts.fa.gz")
@@ -97,7 +118,7 @@ TRANSCRIPT_TO_GENE_MAPPING  = config['transcript_to_gene'] if 'transcript_to_gen
 KALLISTO_INDEX              = REFERENCE_DIR + "/" + getbasename(REF_TRANSCRIPT_FASTA) + "-kallisto.idx"
 TRANSCRIPT_COUNTS           = KALLISTO_DIR  + "/transcript_counts.tsv.gz"
 GENE_COUNTS                 = KALLISTO_DIR  + "/gene_counts.tsv.gz"
-DEGS                        = GENE_EXP_DIR  + "/" + CONDITION_A + "vs" + CONDITION_B + "-DEGs.tsv"
+DEGS                        = GENE_EXP_DIR  + "/DEGs"
 CHECKING_PLOTS              = KMER_DE_DIR   + "/checking_plots.pdf"
 DIST_MATRIX                 = GENE_EXP_DIR  + "/clustering_of_samples.pdf"
 NORMALIZED_COUNTS           = GENE_EXP_DIR  + "/normalized_counts.tsv"
@@ -162,16 +183,20 @@ if platform == "darwin":
 # GET THE METHOD USED FOR DETECT DE KMERS
 if DIFF_METHOD == "DESeq2":
     TEST_DIFF_SCRIPT   = BIN_DIR + "/DESeq2_diff_method.R"
+    if NB_CONDITION >2:
+        sys.exit("Dekupl can't run DESeq2 with more than 2 conditions, possible choice is 'limma-voom'")
 elif DIFF_METHOD == "Ttest":
     TEST_DIFF_SCRIPT   = BIN_DIR + "/Ttest_diff_method.R"
+    if NB_CONDITION >2:
+        sys.exit("Dekupl can't run DESeq2 with more than 2 conditions, possible choice is 'limma-voom'")
 elif DIFF_METHOD == "limma-voom":
     TEST_DIFF_SCRIPT   = BIN_DIR + "/limma-voom_diff_method.R"
 else:
-    sys.exit("Invalid value for 'diff_method', possible choices are: 'DESeq2', 'limma-voom' and 'Ttest'")
-    
+    sys.exit("Invalid value for 'diff_method', possible choices are: 'DESeq2','Ttest' and 'limma-voom'")
+
 # AUTOMATICALLY SET GENE DIFF METHOD TO LIMMA-VOOM IF MORE THAN 100 SAMPLES
 if 'gene_diff_method' not in config :
-    if len(SAMPLE_NAMES) <= 100:
+    if len(SAMPLE_NAMES) <= 100 and NB_CONDITION == 2:
         GENE_DIFF_METH = "DESeq2"
     else:
         GENE_DIFF_METH = "limma-voom"
@@ -179,6 +204,8 @@ if 'gene_diff_method' not in config :
 # GET THE METHOD USED FOR DIFFERENTIAL GENE EXPRESSION (DEGs)
 if GENE_DIFF_METH == "DESeq2":
     GENE_TEST_DIFF_SCRIPT   = DESEQ2_DEG
+    if NB_CONDITION >2:
+        sys.exit("Dekupl can't run DESeq2 with more than 2 conditions, possible choice is 'limma-voom'")
 elif GENE_DIFF_METH == "limma-voom":
     GENE_TEST_DIFF_SCRIPT   = LIMMA_VOOM_DEG
 else:
@@ -190,7 +217,7 @@ if SEED not in ['fixed', 'not-fixed']:
 
 # VERIFY LIB_TYPE VALUE
 if LIB_TYPE not in ['rf', 'fr', 'unstranded', 'single']:
-    sys.exit("Invalid value for 'lib_type', possible choices are: 'rf', 'fr' and 'unstranded'")
+    sys.exit("Invalid value for 'lib_type', possible choices are: 'rf', 'rf' and 'unstranded'")
 
 # VALIDATE sample names, because they will be used with R and cause errors if malformed
 for name in SAMPLE_NAMES:
@@ -221,8 +248,13 @@ onstart:
     sys.stderr.write("MIN_REC_AB  = " + str(MIN_REC_AB) + "\n")
 
     sys.stderr.write("\n* Diff analysis\n")
-    sys.stderr.write("CONDITION_A    = " + CONDITION_A + "\n")
-    sys.stderr.write("CONDITION_B    = " + CONDITION_B + "\n")
+    for i in range(0,NB_CONDITION,1):
+        sys.stderr.write("CONDITION_"+str(i)+" = "+str(TAB_CONDITION[i])+"\n")
+    if CONTRAST != 'NA':
+        i=1
+        for key in CONTRAST:
+            sys.stderr.write("CONTRAST n°"+str(i)+" = "+str(key)+"\n")
+            i=i+1
     sys.stderr.write("PVALUE_MAX     = " + str(PVALUE_MAX) + "\n")
     sys.stderr.write("LOG2FC_MIN     = " + str(LOG2FC_MIN) + "\n")
     sys.stderr.write("DIFF_METHOD    = " + DIFF_METHOD + "\n")
@@ -230,13 +262,41 @@ onstart:
     sys.stderr.write("GENE_DIFF_METH = " + GENE_DIFF_METH + "\n")
     return []
 
+
+TAB_DIFF_COUNTS=['']
+TAB_PVALUE_ALL=['']
+TAB_MERGED_DIFF_COUNTS=['']
+if (DIFF_METHOD == "limma-voom"):
+    for i in range(0,len(TAB_CONTRAST),1):
+        if i==0:
+            TAB_DIFF_COUNTS[i] = str(DIFF_COUNTS) + str(i+1) + ".tsv.gz"
+            TAB_PVALUE_ALL[i]=str(PVALUE_ALL) + str(i+1) + ".txt.gz"
+            TAB_MERGED_DIFF_COUNTS[i]= str(MERGED_DIFF_COUNTS) + str(i+1) + ".tsv.gz"
+        else:
+            TAB_DIFF_COUNTS.append(str(DIFF_COUNTS) + str(i+1) + ".tsv.gz")
+            TAB_PVALUE_ALL.append(str(PVALUE_ALL) + str(i+1) + ".txt.gz")
+            TAB_MERGED_DIFF_COUNTS.append(str(MERGED_DIFF_COUNTS) + str(i+1) + ".tsv.gz")
+else:
+    TAB_DIFF_COUNTS[0] = str(DIFF_COUNTS) + ".tsv.gz"
+    TAB_PVALUE_ALL[0]= str(PVALUE_ALL) + ".txt.gz"
+    TAB_MERGED_DIFF_COUNTS[0]= str(MERGED_DIFF_COUNTS) + ".tsv.gz"
+
+TAB_DEGS=['']
+if (GENE_DIFF_METH == "limma-voom"):
+    for i in range(0,len(TAB_CONTRAST),1):
+        if i==0:
+            TAB_DEGS[i] = str(DEGS) + str(i+1) + ".tsv"
+        else:
+            TAB_DEGS.append(str(DEGS) + str(i+1) + ".tsv")
+else:
+    TAB_DEGS[0]= str(DEGS) + ".tsv"
+
 if DATA_TYPE == "RNA-Seq":
     rule all:
-      input: MERGED_DIFF_COUNTS, DEGS
+      input: TAB_MERGED_DIFF_COUNTS, TAB_DEGS
 else:
     rule all:
-      input: MERGED_DIFF_COUNTS
-
+      input: TAB_MERGED_DIFF_COUNTS
 
 # LOG FUNCTIONS
 def current_date():
@@ -469,20 +529,22 @@ rule gene_counts:
       for gene_id in gene_counts:
         f.write(bytes(gene_id + "\t" + "\t".join([str(int(x)) for x in gene_counts[gene_id]]) + "\n",'UTF-8'))
 
-# 1.7 Differential expression with DESEQ2
+# 1.7 Differential expression
 rule differential_gene_expression:
   input:
     gene_counts = GENE_COUNTS,
     sample_conditions = SAMPLE_CONDITIONS
   params:
+    differentially_expressed_genes = DEGS,
     condition_col = CONDITION_COL,
-    condition_A = CONDITION_A,
-    condition_B = CONDITION_B
+    conditions  = TAB_CONDITION,
+    nb_condition = NB_CONDITION,
+    contrast= TAB_CONTRAST
   output:
-    differentially_expressed_genes  = DEGS,
-    #dist_matrix			            = DIST_MATRIX,
-    norm_counts		                    = NORMALIZED_COUNTS,
-    #pca_design			            = PCA_DESIGN
+    TAB_DEGS,
+    #dist_matrix = DIST_MATRIX,
+    norm_counts = NORMALIZED_COUNTS,
+    #pca_design = PCA_DESIGN
   log : LOGS + "/DESeq2_diff_gene_exp.log"
   shell: 
         """
@@ -490,11 +552,12 @@ rule differential_gene_expression:
         {input.gene_counts} \
         {input.sample_conditions} \
         {params.condition_col} \
-        {params.condition_A} \
-        {params.condition_B} \
-        {output.differentially_expressed_genes} \
+        {params.differentially_expressed_genes} \
         {output.norm_counts} \
-        {log}
+        {log} \
+        {params.nb_condition} \
+        {params.conditions} \
+        {params.contrast}
         """
 
 ###############################################################################
@@ -560,7 +623,7 @@ rule jellyfish_dump:
     exec_time = LOGS + "/{sample}_jellyfishDumpRawCounts_exec_time.log"
   run:
     start_log(log['exec_time'], "jellyfish_dump")
-    shell("{JELLYFISH_DUMP} -c {input} | {SORT} -T {TMP_DIR} -k 1 -S {resources.ram}M --parallel {threads}| pigz -p {threads} -c > {output}")
+    shell("{JELLYFISH_DUMP} -c {input} | {SORT} -k 1 -S {resources.ram}M --parallel {threads}| pigz -p {threads} -c > {output}")
     end_log(log['exec_time'], "jellyfish_dump")
 
 rule join_counts:
@@ -609,7 +672,7 @@ rule ref_transcript_dump:
   resources: ram = MAX_MEM_SORT
   run:
     start_log(log['exec_time'], "ref_transcript_dump")
-    shell("{JELLYFISH_DUMP} -c {input} | {SORT} -T {TMP_DIR} -k 1 -S {resources.ram}M --parallel {threads}| pigz -p {threads} -c > {output}")
+    shell("{JELLYFISH_DUMP} -c {input} | {SORT} -k 1 -S {resources.ram}M --parallel {threads}| pigz -p {threads} -c > {output}")
     end_log(log['exec_time'], "ref_transcript_dump")
 
 # 3.3 Filter counter k-mer that are present in the transcriptome set
@@ -631,24 +694,29 @@ rule filter_transcript_counts:
 #         Apply a T-test on all new k-mers to select only those that are
 #         differentially expressed.
 #
+
 rule test_diff_counts:
   input:
     counts = MASKED_COUNTS if DATA_TYPE == "RNA-Seq" else RAW_COUNTS,
     sample_conditions = SAMPLE_CONDITIONS_FULL,
     binary = TTEST_FILTER # this is just here to compile T-test. This rule also includes DESeq2 and Poisson tests
   output:
-    diff_counts = DIFF_COUNTS,
-    pvalue_all  = PVALUE_ALL,
+    TAB_PVALUE_ALL,
+    TAB_DIFF_COUNTS
     #tmp_dir     = TMP_DIR + "/test_diff"
     #tmp_dir     = temp(TMP_DIR + "/test_diff")
+    
   params:
-    conditionA  = CONDITION_A,
-    conditionB  = CONDITION_B,
+    pvalue_all  = PVALUE_ALL,
+    diff_counts = DIFF_COUNTS,
+    conditions  = TAB_CONDITION,
+    nb_condition = NB_CONDITION,
     pvalue_threshold = PVALUE_MAX,
     log2fc_threshold = LOG2FC_MIN,
     chunk_size = CHUNK_SIZE,
     tmp_dir = TMP_DIR + "/test_diff",
-    seed = SEED
+    seed = SEED,
+    contrast= TAB_CONTRAST
   threads: MAX_CPU
   log: LOGS + "/test_diff_counts.logs"
   shell: 
@@ -659,31 +727,31 @@ rule test_diff_counts:
         {input.sample_conditions} \
         {params.pvalue_threshold} \
         {params.log2fc_threshold} \
-        {params.conditionA} \
-        {params.conditionB} \
         {threads} \
         {params.chunk_size} \
         {params.tmp_dir} \
-        {output.diff_counts} \
-        {output.pvalue_all} \
+        {params.diff_counts} \
+        {params.pvalue_all} \
         {log} \
-        {params.seed}
+        {params.seed} \
+        {params.nb_condition} \
+        {params.conditions} \
+        {params.contrast}
         """
 
 rule merge_tags:
   input:
-    counts = DIFF_COUNTS,
+    counts = TAB_DIFF_COUNTS,
     binary = MERGE_TAGS
   output:
-    MERGED_DIFF_COUNTS
+    TAB_MERGED_DIFF_COUNTS
   log:
     exec_time = LOGS + "/merge_tags_exec_time.log"
   run:
     options = "-k {KMER_LENGTH}"
-
     if LIB_TYPE == "unstranded":
       options += " -n"
-
     start_log(log['exec_time'], "merge_tags")
-    shell("{MERGE_TAGS} " + options + " {input.counts} | gzip -c > {output}")
+    for i in range(0,len(TAB_DIFF_COUNTS),1):
+        shell("{MERGE_TAGS} " + options + " " + TAB_DIFF_COUNTS[i] +" | gzip -c > " + TAB_MERGED_DIFF_COUNTS[i])
     end_log(log['exec_time'], "merge_tags")

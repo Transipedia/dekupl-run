@@ -259,7 +259,7 @@ logging("Pvalues are adjusted")
 
 #LEFT JOIN INTO dataDESeq2All
 #GET ALL THE INFORMATION (ID,MEAN_A,MEAN_B,LOG2FC,COUNTS) FOR DE KMERS
-system(paste("echo \"join <(zcat ", adj_pvalue,") <(zcat ", dataDESeq2All," ) | awk 'function abs(x){return ((x < 0.0) ? -x : x)} {if (abs(\\$5) >=", log2fc_threshold, " && \\$2 <= ", pvalue_threshold, ") print \\$0}' | tr ' ' '\t' | gzip > ", dataDESeq2Filtered, "\" | bash", sep=""))
+system(paste("echo \"LANG=en_EN join <(zcat ", adj_pvalue," | LANG=en_EN sort -n -k1) <(zcat ", dataDESeq2All," | LANG=en_EN sort -n -k1) | awk 'function abs(x){return ((x < 0.0) ? -x : x)} {if (abs(\\$5) >=", log2fc_threshold, " && \\$2 <= ", pvalue_threshold, ") print \\$0}' | tr ' ' '\t' | gzip > ", dataDESeq2Filtered, "\" | bash", sep=""))
 system(paste("rm", adj_pvalue, dataDESeq2All))
 
 logging("Get counts for pvalues that passed the filter")

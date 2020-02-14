@@ -179,11 +179,13 @@ Set parameter `lib_type` to *"single"*. You can also specify fragments length (s
   command `fastq_dir/sample_name_{1,2}.fastq.gz`.
   You can also provide a TSV file with your samples and conditions with the *samples_tsv* parameter (see below).
 - **samples_tsv**: A samples sheet in TSV format with at least a column 'name' with samples names and a column 'condition' with their associated conditions. This file must have a header line with the column names.
-- **transcript_fasta**: The reference transcriptome to be used for masking. By default DEKupl-run uses the human Gencode transcriptome for masking. To change this, add to the config.json file:
-`"transcript_fasta":my_transciptome.fa`
+- **ref_masking**: The reference transcriptome to be used for masking. By default DEKupl-run uses the human Gencode 24 transcriptome for masking. To change this, add to the config.json file:
+`"ref_masking":my_transciptome.fa`
 - **transcript_to_gene**: This is a two column tabulated file, with the transcript ID in the first column and the gene ID in the second column. The file is not mandatory if the FASTA transcriptome is from Gencode, were the gene ID can be extracted from the sequence names in the FASTA. An example of this file can be found here : [tests/gencode.v24.transcripts.head1000.mapping.tsv](tests/gencode.v24.transcripts.head1000.mapping.tsv).
 - **seed**: Fixation of the seed for k-mer differential statistics. By default DEKupl-run fixes the variation due to the statistical method but it could add a quite overhead on the analysis (default: 'fixed'; possible choices are 'fixed' or 'not-fixed). Not useful for Ttest.
 - **masking**: State of the masking step (default: `mask`). Set `nomask` will skip the masking step.
+- **ref_kallisto**: The reference transcriptome to be used by kallisto. By default DEKupl-run uses the human Gencode 24 transcriptome. To change this, add to the config.json file:
+`"ref_kallisto":my_transciptome.fa`
 
 
 ### Configuration for single-end libraries

@@ -42,7 +42,7 @@ We recommand tu use [conda](https://anaconda.org/) to install dekupl-run, but yo
     ```
     wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
     bash Miniconda3-latest-Linux-x86_64.sh
-    ``` 
+    ```
 - **Step 2: Install dekupl-run**. This will create a dekupl conda environment (if missing) and install dekupl-run inside. The order of parameters is important.
     ```
     conda install -n dekupl -y -m --override-channels -c transipedia \
@@ -77,7 +77,7 @@ We recommand tu use [conda](https://anaconda.org/) to install dekupl-run, but yo
 
 ### Option 3: Use dekupl-run with singularity
 
-One can create a singularity container from the docker image. Two methods are available, they should both work. 
+One can create a singularity container from the docker image. Two methods are available, they should both work.
 
 A difference with docker image is that with Singularity, you don't need to mount any volume, but you must have your config.json and your inputs file in the directory where you are running dekupl-run.
 
@@ -107,11 +107,11 @@ A difference with docker image is that with Singularity, you don't need to mount
 
 ### Config file structure
 
-Here is an example of a minimal config file with only mandatory information. You can copy this base and adapt it to your needs (see following paragraphs). 
+Here is an example of a minimal config file with only mandatory information. You can copy this base and adapt it to your needs (see following paragraphs).
 
 The parameter `samples` containing the list of samples with their associated conditions can be replaced with a TSV file using the `samples_tsv` option (see below).
 
-*Note* : even though an arbitrary config file name can be specified on the command line (using --configfile), a non-empty file named ‘config.json’ must be present in the current directory. ‘config.json’ will be overriden by the name specified on the command line. 
+*Note* : even though an arbitrary config file name can be specified on the command line (using --configfile), a non-empty file named ‘config.json’ must be present in the current directory. ‘config.json’ will be overriden by the name specified on the command line.
 
 ```
 {
@@ -179,13 +179,11 @@ Set parameter `lib_type` to *"single"*. You can also specify fragments length (s
   command `fastq_dir/sample_name_{1,2}.fastq.gz`.
   You can also provide a TSV file with your samples and conditions with the *samples_tsv* parameter (see below).
 - **samples_tsv**: A samples sheet in TSV format with at least a column 'name' with samples names and a column 'condition' with their associated conditions. This file must have a header line with the column names.
-- **ref_masking**: The reference transcriptome to be used for masking. By default DEKupl-run uses the human Gencode 24 transcriptome for masking. To change this, add to the config.json file:
-`"ref_masking":my_transciptome.fa`
+- **transcript_fasta**: The reference transcriptome to be used for masking. By default DEKupl-run uses the human Gencode transcriptome for masking. To change this, add to the config.json file:
+`"transcript_fasta":my_transciptome.fa`
 - **transcript_to_gene**: This is a two column tabulated file, with the transcript ID in the first column and the gene ID in the second column. The file is not mandatory if the FASTA transcriptome is from Gencode, were the gene ID can be extracted from the sequence names in the FASTA. An example of this file can be found here : [tests/gencode.v24.transcripts.head1000.mapping.tsv](tests/gencode.v24.transcripts.head1000.mapping.tsv).
 - **seed**: Fixation of the seed for k-mer differential statistics. By default DEKupl-run fixes the variation due to the statistical method but it could add a quite overhead on the analysis (default: 'fixed'; possible choices are 'fixed' or 'not-fixed). Not useful for Ttest.
 - **masking**: State of the masking step (default: `mask`). Set `nomask` will skip the masking step.
-- **ref_kallisto**: The reference transcriptome to be used by kallisto. By default DEKupl-run uses the human Gencode 24 transcriptome. To change this, add to the config.json file:
-`"ref_kallisto":my_transciptome.fa`
 
 
 ### Configuration for single-end libraries

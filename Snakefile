@@ -91,7 +91,7 @@ ASSEMBLIES_BAM              = KMER_DE_DIR   + "/merged-diff-counts.bam"
 SAMPLE_CONDITIONS           = METADATA_DIR  + "/sample_conditions.tsv"
 SAMPLE_CONDITIONS_FULL      = METADATA_DIR  + "/sample_conditions_full.tsv"
 DEFAULT_TRANSCRIPTS         = "".join(REFERENCE_DIR + "/gencode.v24.transcripts.fa.gz")
-REF_TRANSCRIPT_MASKING        = config['ref_masking'] if 'ref_masking' in config else DEFAULT_TRANSCRIPTS
+REF_TRANSCRIPT_MASKING      = config['ref_masking'] if 'ref_masking' in config else DEFAULT_TRANSCRIPTS
 REF_TRANSCRIPT_COUNTS       = REFERENCE_DIR + "/" + getbasename(REF_TRANSCRIPT_MASKING) + ".tsv.gz"
 REF_TRANSCRIPT_KALLISTO     = config['ref_kallisto'] if 'ref_kallisto' in config else DEFAULT_TRANSCRIPTS
 TRANSCRIPT_TO_GENE_MAPPING  = config['transcript_to_gene'] if 'transcript_to_gene' in config else REFERENCE_DIR + "/transcript_to_gene_mapping.tsv"
@@ -325,12 +325,9 @@ rule download_kallisto:
 #
 # Download the gencode transcripts in fasta format (if no input transcriptome)
 rule gencode_download_masking:
-  output: REF_TRANSCRIPT_MASKING
+  output: DEFAULT_TRANSCRIPTS
   shell: "wget ftp://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_24/gencode.v24.transcripts.fa.gz -O {output}"
 
-rule gencode_download_kallisto:
-  output: REF_TRANSCRIPT_KALLISTO
-  shell: "wget ftp://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_24/gencode.v24.transcripts.fa.gz -O {output}"
 ###############################################################################
 #
 # BUILD INDEXES FROM REFERENCE FILES

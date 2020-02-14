@@ -167,8 +167,8 @@ Set parameter `lib_type` to *"single"*. You can also specify fragments length (s
 - **tmp_dir**: Temporary directory to use (default: `./` aka current directory)
 - **r1_suffix**: Suffix to use for the FASTQ with left mate. Set `r2_suffix` for the second FASTQ.
 - **dekupl_counter**:
-  * *min_recurrence*: Minimum number of samples to support a k-mer
-  * *min_recurrence_abundance*: Min abundance threshold to consider a k-mer in the reccurence filter.
+  * *min_recurrence*: Minimum number of samples to support a k-mer (default: 10% of the size of the input condition with the less replicate).
+  * *min_recurrence_abundance*: Min abundance threshold to consider a k-mer in the reccurence filter (default: 5).
 - **diff_analysis**:
   * *condition*: Specify A and B conditions.
   * *pvalue_threshold*: Min p-value (adjusted) to consider a k-mer as DE. Only
@@ -183,6 +183,8 @@ Set parameter `lib_type` to *"single"*. You can also specify fragments length (s
 `"transcript_fasta":my_transciptome.fa`
 - **transcript_to_gene**: This is a two column tabulated file, with the transcript ID in the first column and the gene ID in the second column. The file is not mandatory if the FASTA transcriptome is from Gencode, were the gene ID can be extracted from the sequence names in the FASTA. An example of this file can be found here : [tests/gencode.v24.transcripts.head1000.mapping.tsv](tests/gencode.v24.transcripts.head1000.mapping.tsv).
 - **seed**: Fixation of the seed for k-mer differential statistics. By default DEKupl-run fixes the variation due to the statistical method but it could add a quite overhead on the analysis (default: 'fixed'; possible choices are 'fixed' or 'not-fixed). Not useful for Ttest.
+- **masking**: State of the masking step (default: `mask`). Set `nomask` will skip the masking step.
+
 
 ### Configuration for single-end libraries
 

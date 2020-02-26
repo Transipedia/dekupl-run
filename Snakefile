@@ -70,7 +70,7 @@ MASKING         = config['masking'] if 'masking' in config else 'mask'
 
 # DIRECTORIES
 BIN_DIR         = workflow.basedir + "/bin"
-#TMP_DIR         = temp(TMP_DIR + "/dekupl_tmp")
+TMP_DIR         = temp(TMP_DIR + "/dekupl_tmp")
 GENE_EXP_DIR    = OUTPUT_DIR + "/gene_expression"
 KALLISTO_DIR    = GENE_EXP_DIR + "/kallisto"
 COUNTS_DIR      = OUTPUT_DIR + "/kmer_counts"
@@ -119,7 +119,7 @@ LIMMA_VOOM_DEG          = BIN_DIR + "/limma-voom_ref_transcripts.R"
 JELLYFISH               = "jellyfish"
 JELLYFISH_COUNT         = JELLYFISH + " count"
 JELLYFISH_DUMP          = JELLYFISH + " dump"
-PIGZ                   = "pigz"
+PIGZ                    = "pigz"
 ZCAT                    = "gunzip -c"
 SORT                    = "sort"
 JOIN                    = "join"

@@ -8,7 +8,8 @@
   "chunk_size":1000000,
   "r1_suffix": "_1.fastq.gz",
   "r2_suffix": "_2.fastq.gz",
-  "transcript_fasta": "tests/gencode.v24.transcripts.head1000.transcriptNames.fa",
+  "ref_kallisto": "tests/gencode.v24.transcripts.head1000.transcriptNames.fa",
+  "ref_masking": "tests/gencode.v24.transcripts.head1000.transcriptNames.fa",
   "transcript_to_gene": "tests/gencode.v24.transcripts.head1000.mapping.tsv",
 
   "dekupl_counter": {

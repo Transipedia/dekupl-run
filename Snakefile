@@ -91,10 +91,11 @@ ASSEMBLIES_BAM              = KMER_DE_DIR   + "/merged-diff-counts.bam"
 SAMPLE_CONDITIONS           = METADATA_DIR  + "/sample_conditions.tsv"
 SAMPLE_CONDITIONS_FULL      = METADATA_DIR  + "/sample_conditions_full.tsv"
 DEFAULT_TRANSCRIPTS         = "".join(REFERENCE_DIR + "/gencode.v24.transcripts.fa.gz")
-REF_TRANSCRIPT_FASTA        = config['transcript_fasta'] if 'transcript_fasta' in config else DEFAULT_TRANSCRIPTS
-REF_TRANSCRIPT_COUNTS       = REFERENCE_DIR + "/" + getbasename(REF_TRANSCRIPT_FASTA) + ".tsv.gz"
+REF_TRANSCRIPT_MASKING      = config['ref_masking'] if 'ref_masking' in config else DEFAULT_TRANSCRIPTS
+REF_TRANSCRIPT_COUNTS       = REFERENCE_DIR + "/" + getbasename(REF_TRANSCRIPT_MASKING) + ".tsv.gz"
+REF_TRANSCRIPT_KALLISTO     = config['ref_kallisto'] if 'ref_kallisto' in config else DEFAULT_TRANSCRIPTS
 TRANSCRIPT_TO_GENE_MAPPING  = config['transcript_to_gene'] if 'transcript_to_gene' in config else REFERENCE_DIR + "/transcript_to_gene_mapping.tsv"
-KALLISTO_INDEX              = REFERENCE_DIR + "/" + getbasename(REF_TRANSCRIPT_FASTA) + "-kallisto.idx"
+KALLISTO_INDEX              = REFERENCE_DIR + "/" + getbasename(REF_TRANSCRIPT_KALLISTO) + "-kallisto.idx"
 TRANSCRIPT_COUNTS           = KALLISTO_DIR  + "/transcript_counts.tsv.gz"
 GENE_COUNTS                 = KALLISTO_DIR  + "/gene_counts.tsv.gz"
 DEGS                        = GENE_EXP_DIR  + "/" + CONDITION_A + "vs" + CONDITION_B + "-DEGs.tsv"
@@ -229,7 +230,8 @@ onstart:
 
     sys.stderr.write("\n* General\n")
     sys.stderr.write("KMER_LENGTH                   = " + str(KMER_LENGTH) + "\n")
-    sys.stderr.write("REF_TRANSCRIPT_FASTA          = " + str(REF_TRANSCRIPT_FASTA) + "\n")
+    sys.stderr.write("REF_TRANSCRIPT_MASKING          = " + str(REF_TRANSCRIPT_MASKING) + "\n")
+    sys.stderr.write("REF_TRANSCRIPT_KALLISTO           = " + str(REF_TRANSCRIPT_KALLISTO) + "\n")
     sys.stderr.write("TRANSCRIPT_TO_GENE_MAPPING    = " + str(TRANSCRIPT_TO_GENE_MAPPING) + "\n")
 
     sys.stderr.write("\n* K-mer counting\n")
@@ -324,7 +326,7 @@ rule download_kallisto:
 #
 # Download the gencode transcripts in fasta format (if no input transcriptome)
 rule gencode_download:
-  output: REF_TRANSCRIPT_FASTA
+  output: DEFAULT_TRANSCRIPTS
   shell: "wget ftp://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_24/gencode.v24.transcripts.fa.gz -O {output}"
 
 
@@ -335,7 +337,7 @@ rule gencode_download:
 # Create a Kallisto index of the reference transrciptome
 rule kallisto_index:
   input:
-    transcripts   = REF_TRANSCRIPT_FASTA,
+    transcripts   = REF_TRANSCRIPT_KALLISTO,
     kallisto_bin  = KALLISTO
   resources: ram = MAX_MEM_KALLISTO
   output:
@@ -437,7 +439,7 @@ rule transcript_counts:
 # 1.5 Create a conversion table from transcript id to gene ids
 if 'transcript_to_gene' not in config:
     rule transcript_to_gene_mapping:
-        input: REF_TRANSCRIPT_FASTA
+        input: REF_TRANSCRIPT_KALLISTO
         output: TRANSCRIPT_TO_GENE_MAPPING
         run:
             mapping = open(output[0], 'w')
@@ -603,8 +605,8 @@ rule join_counts:
 
 # 3.2 Counts k-mer of all transcript (for further filtration)
 rule ref_transcript_count:
-  input: REF_TRANSCRIPT_FASTA
-  output: temp(REF_TRANSCRIPT_FASTA + ".jf")
+  input: REF_TRANSCRIPT_MASKING
+  output: temp(REF_TRANSCRIPT_MASKING + ".jf")
   threads: MAX_CPU_JELLYFISH
   resources: ram = MAX_MEM_JELLYFISH
   run:
@@ -617,7 +619,7 @@ rule ref_transcript_count:
       shell("{JELLYFISH_COUNT} " + options + " {input}")
 
 rule ref_transcript_dump:
-  input: REF_TRANSCRIPT_FASTA + ".jf"
+  input: REF_TRANSCRIPT_MASKING + ".jf"
   output: REF_TRANSCRIPT_COUNTS
   log :
     exec_time = LOGS + "/jellyfishDumpRefTrancriptCounts_exec_time.log"

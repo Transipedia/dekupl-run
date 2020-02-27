@@ -20,7 +20,7 @@ the production of contigs from differentially expressed k-mers.
 - [Output files](#output-files)
 - [Whole-genome data](#whole-genome-data)
 - [FAQ](#faq)
-
+ 
 ## Usage
 
 Dekupl-run is a pipeline built with Snakemake. It works with a [configuration file](#configuration) that you will use to set the list of samples and their conditions as well as parameters for the test.

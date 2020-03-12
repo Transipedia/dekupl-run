@@ -22,10 +22,10 @@ addons:
 before_install:
   # Install latest R version
   #- sudo add-apt-repository 'deb https://cloud.r-project.org/bin/linux/ubuntu trusty-cran35/'
-  - echo "deb https://cloud.r-project.org/bin/linux/ubuntu trusty-cran35/" | sudo tee -a /etc/apt/sources.list
+  - echo "deb https://cloud.r-project.org/bin/linux/ubuntu trusty/" | sudo tee -a /etc/apt/sources.list
   - sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E084DAB9
   - sudo apt-get update
-  - sudo apt-get -y install r-base r-base-core r-recommended
+  - sudo apt-get -y install r-base=3.3.3-1trusty0_all  r-base-core=3.3.3-1trusty0_amd64
 install:
   - pip install snakemake
   # Install all R packages

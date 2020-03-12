@@ -23,10 +23,9 @@ before_install:
   # Install latest R version
   #- sudo add-apt-repository https://cloud.r-project.org/bin/linux/ubuntu trusty/
   - echo "deb https://cloud.r-project.org/bin/linux/ubuntu trusty/" | sudo tee -a /etc/apt/sources.list
-  - sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E084DAB9
-  - for i in /etc/apt/sources.list{,.d/*}; do echo file: $i; cat $i; echo ====; done
-  - sudo apt-get update
-  - sudo apt-get -y install r-base r-base-dev
+  - sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9
+  - sudo apt update
+  - sudo apt install r-base r-base-core r-recommended
 install:
   - pip install snakemake
   # Install all R packages

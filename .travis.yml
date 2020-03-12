@@ -25,7 +25,7 @@ before_install:
   - echo "deb https://cloud.r-project.org/bin/linux/ubuntu trusty/" | sudo tee -a /etc/apt/sources.list
   - sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E084DAB9
   - sudo apt-get update
-  - sudo apt-get -y install r-base-html=3.3.3-1trusty0 r-cran-boot=1.3-20-1trusty0 r-cran-kernsmooth=2.23-15-1trusty0 r-cran-mass=7.3-50-1trusty0  r-cran-class=7.3-14-1trusty0  r-cran-nnet=7.3-9-1trusty0 r-recommended=3.3.3-1trusty0 r-base=3.3.3-1trusty0 r-base-core=3.3.3-1trusty0
+  - sudo apt-get -y install r-base-html=3.3.3-1trusty0 r-cran-boot=1.3-11-1trusty0 r-cran-kernsmooth=2.23-15-1trusty0 r-cran-mass=7.3-31-1trusty0  r-cran-class=7.3-14-1trusty0  r-cran-nnet=7.3-9-1trusty0 r-recommended=3.3.3-1trusty0 r-base=3.3.3-1trusty0 r-base-core=3.3.3-1trusty0
 install:
   - pip install snakemake
   # Install all R packages

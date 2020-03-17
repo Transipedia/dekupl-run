@@ -37,8 +37,8 @@ install:
   - chmod +x jellyfish
   - export PATH=$PATH:$PWD
 script:
-  - snakemake --configfile tests/config_transcript_to_gene_mapping.json
-  - snakemake --configfile tests/config_ttest.json
-  - snakemake --configfile tests/config_deseq2.json
-  - snakemake --configfile tests/config_limma-voom.json
+  - snakemake --configfile tests/config_transcript_to_gene_mapping.json --cores 1
+  - snakemake --configfile tests/config_ttest.json --cores 1
+  - snakemake --configfile tests/config_deseq2.json --cores 1
+  - snakemake --configfile tests/config_limma-voom.json --cores 1
   - snakemake -n --configfile tests/config_samples_sheet.json

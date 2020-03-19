@@ -51,8 +51,7 @@ CONDITION_A     = config['diff_analysis']['condition']['A']
 CONDITION_B     = config['diff_analysis']['condition']['B']
 PVALUE_MAX      = config['diff_analysis']['pvalue_threshold']
 LOG2FC_MIN      = config['diff_analysis']['log2fc_threshold']
-MIN_REC         = config['dekupl_counter']['min_recurrence']
-MIN_REC_AB      = config['dekupl_counter']['min_recurrence_abundance']
+MIN_REC_AB      = config['dekupl_counter']['min_recurrence_abundance'] if 'dekupl_counter' in config and 'min_recurrence_abundance' in config['dekupl_counter'] else 5
 LIB_TYPE        = config['lib_type']    if 'lib_type'     in config else "rf"
 R1_SUFFIX       = config['r1_suffix']   if 'r1_suffix'    in config else "_1.fastq.gz"
 R2_SUFFIX       = config['r2_suffix']   if 'r2_suffix'    in config else "_2.fastq.gz"
@@ -67,6 +66,7 @@ FRAG_STD_DEV    = config['fragment_standard_deviation'] if 'fragment_standard_de
 OUTPUT_DIR      = config['output_dir']
 FASTQ_DIR       = config['fastq_dir']
 SEED            = config['seed'] if 'seed' in config else 'fixed'
+MASKING         = config['masking'] if 'masking' in config else 'mask'
 
 # DIRECTORIES
 BIN_DIR         = workflow.basedir + "/bin"
@@ -91,10 +91,11 @@ ASSEMBLIES_BAM              = KMER_DE_DIR   + "/merged-diff-counts.bam"
 SAMPLE_CONDITIONS           = METADATA_DIR  + "/sample_conditions.tsv"
 SAMPLE_CONDITIONS_FULL      = METADATA_DIR  + "/sample_conditions_full.tsv"
 DEFAULT_TRANSCRIPTS         = "".join(REFERENCE_DIR + "/gencode.v24.transcripts.fa.gz")
-REF_TRANSCRIPT_FASTA        = config['transcript_fasta'] if 'transcript_fasta' in config else DEFAULT_TRANSCRIPTS
-REF_TRANSCRIPT_COUNTS       = REFERENCE_DIR + "/" + getbasename(REF_TRANSCRIPT_FASTA) + ".tsv.gz"
+REF_TRANSCRIPT_MASKING      = config['ref_masking'] if 'ref_masking' in config else DEFAULT_TRANSCRIPTS
+REF_TRANSCRIPT_COUNTS       = REFERENCE_DIR + "/" + getbasename(REF_TRANSCRIPT_MASKING) + ".tsv.gz"
+REF_TRANSCRIPT_KALLISTO     = config['ref_kallisto'] if 'ref_kallisto' in config else DEFAULT_TRANSCRIPTS
 TRANSCRIPT_TO_GENE_MAPPING  = config['transcript_to_gene'] if 'transcript_to_gene' in config else REFERENCE_DIR + "/transcript_to_gene_mapping.tsv"
-KALLISTO_INDEX              = REFERENCE_DIR + "/" + getbasename(REF_TRANSCRIPT_FASTA) + "-kallisto.idx"
+KALLISTO_INDEX              = REFERENCE_DIR + "/" + getbasename(REF_TRANSCRIPT_KALLISTO) + "-kallisto.idx"
 TRANSCRIPT_COUNTS           = KALLISTO_DIR  + "/transcript_counts.tsv.gz"
 GENE_COUNTS                 = KALLISTO_DIR  + "/gene_counts.tsv.gz"
 DEGS                        = GENE_EXP_DIR  + "/" + CONDITION_A + "vs" + CONDITION_B + "-DEGs.tsv"
@@ -155,6 +156,22 @@ elif "samples" in config:
 
 SAMPLE_NAMES    = [i['name'] for i in SAMPLES]
 
+#DEFAULT MIN_REC SETTING CALCULATION
+#Depends on the size of the input condition with the least replicates
+countCA=0
+countCB=0
+for smpls in SAMPLES:
+    if smpls['condition']==CONDITION_A:
+        countCA += 1
+    elif smpls['condition']==CONDITION_B:
+        countCB += 1
+    else:
+        sys.exit("Condition names not matching" + json.dumps(s))
+DFLT_MIN_REC=int(round(float(min(countCA,countCB))*10/100))+2
+
+MIN_REC         = config['dekupl_counter']['min_recurrence'] if 'dekupl_counter' in config and 'min_recurrence' in config['dekupl_counter'] else DFLT_MIN_REC
+
+
 if platform == "darwin":
     SORT = "gsort"
     JOIN = "gjoin"
@@ -168,7 +185,7 @@ elif DIFF_METHOD == "limma-voom":
     TEST_DIFF_SCRIPT   = BIN_DIR + "/limma-voom_diff_method.R"
 else:
     sys.exit("Invalid value for 'diff_method', possible choices are: 'DESeq2', 'limma-voom' and 'Ttest'")
-    
+
 # AUTOMATICALLY SET GENE DIFF METHOD TO LIMMA-VOOM IF MORE THAN 100 SAMPLES
 if 'gene_diff_method' not in config :
     if len(SAMPLE_NAMES) <= 100:
@@ -213,7 +230,8 @@ onstart:
 
     sys.stderr.write("\n* General\n")
     sys.stderr.write("KMER_LENGTH                   = " + str(KMER_LENGTH) + "\n")
-    sys.stderr.write("REF_TRANSCRIPT_FASTA          = " + str(REF_TRANSCRIPT_FASTA) + "\n")
+    sys.stderr.write("REF_TRANSCRIPT_MASKING          = " + str(REF_TRANSCRIPT_MASKING) + "\n")
+    sys.stderr.write("REF_TRANSCRIPT_KALLISTO           = " + str(REF_TRANSCRIPT_KALLISTO) + "\n")
     sys.stderr.write("TRANSCRIPT_TO_GENE_MAPPING    = " + str(TRANSCRIPT_TO_GENE_MAPPING) + "\n")
 
     sys.stderr.write("\n* K-mer counting\n")
@@ -308,7 +326,7 @@ rule download_kallisto:
 #
 # Download the gencode transcripts in fasta format (if no input transcriptome)
 rule gencode_download:
-  output: REF_TRANSCRIPT_FASTA
+  output: DEFAULT_TRANSCRIPTS
   shell: "wget ftp://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_24/gencode.v24.transcripts.fa.gz -O {output}"
 
 
@@ -319,7 +337,7 @@ rule gencode_download:
 # Create a Kallisto index of the reference transrciptome
 rule kallisto_index:
   input:
-    transcripts   = REF_TRANSCRIPT_FASTA,
+    transcripts   = REF_TRANSCRIPT_KALLISTO,
     kallisto_bin  = KALLISTO
   resources: ram = MAX_MEM_KALLISTO
   output:
@@ -421,7 +439,7 @@ rule transcript_counts:
 # 1.5 Create a conversion table from transcript id to gene ids
 if 'transcript_to_gene' not in config:
     rule transcript_to_gene_mapping:
-        input: REF_TRANSCRIPT_FASTA
+        input: REF_TRANSCRIPT_KALLISTO
         output: TRANSCRIPT_TO_GENE_MAPPING
         run:
             mapping = open(output[0], 'w')
@@ -484,7 +502,7 @@ rule differential_gene_expression:
     norm_counts		                    = NORMALIZED_COUNTS,
     #pca_design			            = PCA_DESIGN
   log : LOGS + "/DESeq2_diff_gene_exp.log"
-  shell: 
+  shell:
         """
         Rscript {GENE_TEST_DIFF_SCRIPT} \
         {input.gene_counts} \
@@ -560,7 +578,7 @@ rule jellyfish_dump:
     exec_time = LOGS + "/{sample}_jellyfishDumpRawCounts_exec_time.log"
   run:
     start_log(log['exec_time'], "jellyfish_dump")
-    shell("{JELLYFISH_DUMP} -c {input} | {SORT} -T {TMP_DIR} -k 1 -S {resources.ram}M --parallel {threads}| pigz -p {threads} -c > {output}")
+    shell("{JELLYFISH_DUMP} -c {input} | {SORT} -T {TMP_DIR} -k 1 -S {resources.ram}M --parallel {threads}| {PIGZ} -p {threads} -c > {output}")
     end_log(log['exec_time'], "jellyfish_dump")
 
 rule join_counts:
@@ -587,8 +605,8 @@ rule join_counts:
 
 # 3.2 Counts k-mer of all transcript (for further filtration)
 rule ref_transcript_count:
-  input: REF_TRANSCRIPT_FASTA
-  output: temp(REF_TRANSCRIPT_FASTA + ".jf")
+  input: REF_TRANSCRIPT_MASKING
+  output: temp(REF_TRANSCRIPT_MASKING + ".jf")
   threads: MAX_CPU_JELLYFISH
   resources: ram = MAX_MEM_JELLYFISH
   run:
@@ -601,7 +619,7 @@ rule ref_transcript_count:
       shell("{JELLYFISH_COUNT} " + options + " {input}")
 
 rule ref_transcript_dump:
-  input: REF_TRANSCRIPT_FASTA + ".jf"
+  input: REF_TRANSCRIPT_MASKING + ".jf"
   output: REF_TRANSCRIPT_COUNTS
   log :
     exec_time = LOGS + "/jellyfishDumpRefTrancriptCounts_exec_time.log"
@@ -609,7 +627,7 @@ rule ref_transcript_dump:
   resources: ram = MAX_MEM_SORT
   run:
     start_log(log['exec_time'], "ref_transcript_dump")
-    shell("{JELLYFISH_DUMP} -c {input} | {SORT} -T {TMP_DIR} -k 1 -S {resources.ram}M --parallel {threads}| pigz -p {threads} -c > {output}")
+    shell("{JELLYFISH_DUMP} -c {input} | {SORT} -T {TMP_DIR} -k 1 -S {resources.ram}M --parallel {threads}| {PIGZ} -p {threads} -c > {output}")
     end_log(log['exec_time'], "ref_transcript_dump")
 
 # 3.3 Filter counter k-mer that are present in the transcriptome set
@@ -633,7 +651,7 @@ rule filter_transcript_counts:
 #
 rule test_diff_counts:
   input:
-    counts = MASKED_COUNTS if DATA_TYPE == "RNA-Seq" else RAW_COUNTS,
+    counts = MASKED_COUNTS if DATA_TYPE == "RNA-Seq" and MASKING != "nomask" else RAW_COUNTS,
     sample_conditions = SAMPLE_CONDITIONS_FULL,
     binary = TTEST_FILTER # this is just here to compile T-test. This rule also includes DESeq2 and Poisson tests
   output:
@@ -651,7 +669,7 @@ rule test_diff_counts:
     seed = SEED
   threads: MAX_CPU
   log: LOGS + "/test_diff_counts.logs"
-  shell: 
+  shell:
         """
         Rscript {TEST_DIFF_SCRIPT} \
         {input.binary} \

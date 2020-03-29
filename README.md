@@ -160,7 +160,7 @@ Set parameter `lib_type` to *"single"*. You can also specify fragments length (s
 
 - **fastq_dir**:  Location of FASTQ files
 - **kmer_length**: Length of k-mers (default: 31). This value shoud not exceed 32.
-- **diff_method**: Method used for k-mer differential testing (default: DESeq2). Possible choices are 'Ttest' which is the fastest, 'DESeq2' which is more sensitive. 'limma' can be a fast and sensitive alternative, especially for large cohorts.
+- **diff_method**: Method used for k-mer differential testing (default: DESeq2). Possible choices are 'Ttest' which is the fastest, 'DESeq2' which is more sensitive. 'limma' can be a fast and sensitive alternative, especially for large cohorts. Note: since the speedup of DESeq2 in version 1.26.0, we advise to use DESeq2 in any circumstance. 
 - **gene_diff_method**: Method used for gene differential testing (default: 'DESeq2' or 'limma-voom' if number of samples > 100). Possible choices are 'DESeq2' and 'limma-voom'. 'limma-voom' is a faster alternative for large cohorts.
 - **lib_type**: Paired-end library type (default: `rf`). Specify either `rf` for reverse-forward strand-specific libraries, `fr` for strand-specific forward-reverse, or `unstranded` for unstranded libraries.
 - **output_dir**: Location of DE-kupl results (default: `DEkupl_result`).

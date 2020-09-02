@@ -8,10 +8,9 @@ Dekupl-run handles the first part of the [DE-kupl pipeline](https://github.com/T
 the production of contigs from differentially expressed k-mers.
 - [Usage](#usage)
 - [Installation](#installation)
-    - [Option 1 : Use dekupl-run with conda](#option-1--use-dekupl-run-with-conda)
+    - [Option 1: Use dekupl-run with singularity](#option-3-use-dekupl-run-with-singularity)
     - [Option 2: Use dekupl-run with Docker](#option-2-use-dekupl-run-with-docker)
-    - [Option 3: Use dekupl-run with singularity](#option-3-use-dekupl-run-with-singularity)
-    - [Option 4: Build and run yourself (not recommended)](#option-4-build-and-run-yourself-not-recommended)
+    - [Option 3: Build and run yourself (not recommended)](#option-4-build-and-run-yourself-not-recommended)
 - [Configuration](#configuration)
     - [Config file structure](#config-file-structure)
     - [Parameters FAQ](#parameters-faq)
@@ -34,33 +33,29 @@ Dekupl-run is a pipeline built with Snakemake. It works with a [configuration fi
 
 ## Installation
 
-We recommand tu use [conda](https://anaconda.org/) to install dekupl-run, but you can also use Docker, Singularity and manual installation.
+We recommand tu use [singularity](https://singularity.lbl.gov/) to install dekupl-run, but you can also use Docker, and manual installation.
 
-### Option 1 : Use dekupl-run with conda
+### Option 1: Use dekupl-run with singularity
 
-- **Step 1: Install conda.** If you do not have a conda distribution installed, we recommend to install miniconda as follows. See [Miniconda website](https://conda.io/miniconda.html) for other installation instructions (ex. for OSX).
+One can create a singularity container from the docker image. Two methods are available, they should both work.
+
+- **Step 1: Build Singularity image**
     ```
-    wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
-    bash Miniconda3-latest-Linux-x86_64.sh
+    singularity build dekupl-annotation.simg docker://transipedia/dekupl-run:1.3.5
     ```
-- **Step 2: Install dekupl-run**. This will create a dekupl conda environment (if missing) and install dekupl-run inside. The order of parameters is important.
+    
+It's advised to mount some volumes (input/output directories). To mount the "/store" volume you should use "--bind /store:/store". That way, you can access the /store directory (in your configuration file, notably). Make sure your config.json is in the same folder as dekupl-run.simg.
+    
+- **Step 2: Use dekupl-run with mounted volumes**
     ```
-    conda install -n dekupl -y -m --override-channels -c transipedia \
-     -c bioconda -c conda-forge -c https://repo.anaconda.com/pkgs/main \
-     -c https://repo.anaconda.com/pkgs/free \
-     -c https://repo.anaconda.com/pkgs/pro dekupl-run
-    ```
-- **Step 3: Run dekupl-run**. We first activate the conda environement where dekupl-run was installed, then we run the software.
-    ```
-    source activate dekupl
-    dekupl-run --configfile my-config.json  -jNB_THREADS --resources ram=MAX_MEMORY -p
+    singularity run --bind /store:/store ./dekupl-run.simg --config-file config.json -jNB_THREADS
     ```
 
 ### Option 2: Use dekupl-run with Docker
 
 - **Step 1: Retrieve the docker image.**
     ```
-    docker pull transipedia/dekupl-run
+    docker pull transipedia/dekupl-run:1.3.5
     ```
 - **Step 2: Run dekupl-run**.
     You may need to mount some volumes :
@@ -75,24 +70,7 @@ We recommand tu use [conda](https://anaconda.org/) to install dekupl-run, but yo
     -jNB_THREADS --resources ram=MAX_MEMORY -p
     ```
 
-### Option 3: Use dekupl-run with singularity
-
-One can create a singularity container from the docker image. Two methods are available, they should both work.
-
-A difference with docker image is that with Singularity, you don't need to mount any volume, but you must have your config.json and your inputs file in the directory where you are running dekupl-run.
-
-- **Method 1**
-  ```
-    singularity pull docker://transipedia/dekupl-run
-    ./dekupl-run.simg --configfile my-config.json -jNB_THREADS --resources ram=MAX_MEMORY -p
-    ```
-- **Method 2**
-    ```
-    singularity build dekupl-run.img docker://transipedia/dekupl-run
-    singularity run ./dekupl-run.img --configfile my-config.json -jNB_THREADS --resources ram=MAX_MEMORY -p
-    ```
-
-### Option 4: Build and run yourself (not recommended)
+### Option 3: Build and run yourself (not recommended)
 
 - **Step 1: Install dependancies**. Before using Dekupl-run, install these dependencies:
     - Snakemake, jellyfish, pigz, CMake, boost

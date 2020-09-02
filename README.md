@@ -8,9 +8,9 @@ Dekupl-run handles the first part of the [DE-kupl pipeline](https://github.com/T
 the production of contigs from differentially expressed k-mers.
 - [Usage](#usage)
 - [Installation](#installation)
-    - [Option 1: Use dekupl-run with singularity](#option-3-use-dekupl-run-with-singularity)
+    - [Option 1: Use dekupl-run with singularity](#option-1-use-dekupl-run-with-singularity)
     - [Option 2: Use dekupl-run with Docker](#option-2-use-dekupl-run-with-docker)
-    - [Option 3: Build and run yourself (not recommended)](#option-4-build-and-run-yourself-not-recommended)
+    - [Option 3: Build and run yourself (not recommended)](#option-3-build-and-run-yourself-not-recommended)
 - [Configuration](#configuration)
     - [Config file structure](#config-file-structure)
     - [Parameters FAQ](#parameters-faq)

@@ -48,7 +48,7 @@ It's advised to mount some volumes (input/output directories). To mount the "/st
     
 - **Step 2: Use dekupl-run with mounted volumes**
     ```
-    singularity run --bind /store:/store ./dekupl-run.simg --config-file config.json -jNB_THREADS
+    singularity run --bind /store:/store ./dekupl-run.simg --configfile config.json -jNB_THREADS
     ```
 
 ### Option 2: Use dekupl-run with Docker

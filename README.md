@@ -41,7 +41,7 @@ One can create a singularity container from the docker image. Two methods are av
 
 - **Step 1: Build Singularity image**
     ```
-    singularity build dekupl-annotation.simg docker://transipedia/dekupl-run:1.3.5
+    singularity build dekupl-run.simg docker://transipedia/dekupl-run:1.3.5
     ```
     
 It's advised to mount some volumes (input/output directories). To mount the "/store" volume you should use "--bind /store:/store". That way, you can access the /store directory (in your configuration file, notably). Make sure your config.json is in the same folder as dekupl-run.simg.
